@@ -10,10 +10,19 @@
 #define IDC_Start                       1000
 #define IDC_Pause                       1001
 #define IDC_Stop                        1002
+#define IDC_SEND                        1003
 #define IDC_Progress                    1006
 #define IDC_ErrCode                     1007
 #define IDC_TX                          1008
+#define IDC_Tx1                         1008
 #define IDC_RX                          1009
+#define IDC_Tx0                         1010
+#define IDC_Tx2                         1012
+#define IDC_Tx3                         1013
+#define IDC_Tx4                         1014
+#define IDC_Tx5                         1015
+#define IDC_Tx6                         1016
+#define IDC_Tx7                         1017
 
 // Next default values for new objects
 // 
@@ -21,7 +30,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        130
 #define _APS_NEXT_COMMAND_VALUE         32771
-#define _APS_NEXT_CONTROL_VALUE         1010
+#define _APS_NEXT_CONTROL_VALUE         1011
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

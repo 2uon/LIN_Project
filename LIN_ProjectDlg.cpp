@@ -62,8 +62,15 @@ void CLINProjectDlg::DoDataExchange(CDataExchange* pDX)
 	CDialogEx::DoDataExchange(pDX);
 	DDX_Control(pDX, IDC_Progress, mProgress);
 	DDX_Control(pDX, IDC_ErrCode, mErrCode);
-	DDX_Control(pDX, IDC_TX, mTx);
 	DDX_Control(pDX, IDC_RX, mRx);
+	DDX_Control(pDX, IDC_Tx0, mTx0);
+	DDX_Control(pDX, IDC_Tx1, mTx1);
+	DDX_Control(pDX, IDC_Tx2, mTx2);
+	DDX_Control(pDX, IDC_Tx3, mTx3);
+	DDX_Control(pDX, IDC_Tx4, mTx4);
+	DDX_Control(pDX, IDC_Tx5, mTx5);
+	DDX_Control(pDX, IDC_Tx6, mTx6);
+	DDX_Control(pDX, IDC_Tx7, mTx7);
 }
 
 BEGIN_MESSAGE_MAP(CLINProjectDlg, CDialogEx)
@@ -73,6 +80,7 @@ BEGIN_MESSAGE_MAP(CLINProjectDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_Start, &CLINProjectDlg::OnBnClickedStart)
 	ON_BN_CLICKED(IDC_Pause, &CLINProjectDlg::OnBnClickedPause)
 	ON_BN_CLICKED(IDC_Stop, &CLINProjectDlg::OnBnClickedStop)
+	ON_BN_CLICKED(IDC_SEND, &CLINProjectDlg::OnBnClickedSend)
 END_MESSAGE_MAP()
 
 
@@ -165,6 +173,7 @@ CLINProjectDlg::~CLINProjectDlg() {
 	wLIN_clear();
 }
 
+// LIN 연결 및 세팅
 int CLINProjectDlg::wLIN_connect() {
 	// 클라이언트 생성
 
@@ -257,6 +266,7 @@ int CLINProjectDlg::wLIN_connect() {
 	return 0;
 }
 
+// LIN 스케줄 시작
 int CLINProjectDlg::wLIN_start() {
 	// 버스 깨우기
 	result = LIN_XmtWakeUp(hClient, hHw);
@@ -286,6 +296,7 @@ int CLINProjectDlg::wLIN_start() {
 	return 0;
 }
 
+// 정지
 int CLINProjectDlg::wLIN_pause() {
 	// 스케줄 정지
 	result = LIN_SuspendSchedule(hClient, hHw);
@@ -299,6 +310,7 @@ int CLINProjectDlg::wLIN_pause() {
 	return 0;
 }
 
+// 초기화
 int CLINProjectDlg::wLIN_clear() {
 	// 스케줄 삭제, 하드웨어 연결 해제
 	result = LIN_DeleteSchedule(hClient, hHw, schedule_position);
@@ -315,7 +327,7 @@ int CLINProjectDlg::wLIN_clear() {
 	return 0;
 }
 
-int CLINProjectDlg::wReadData() {
+void CLINProjectDlg::wReadData() {
 	// 필터 설정
 	unsigned __int64 Filter = 0xFFFFFFFFFFFFFFFF;
 	LIN_SetClientFilter(hClient, hHw, Filter);
@@ -348,23 +360,18 @@ int CLINProjectDlg::wReadData() {
 				cout << hex << uppercase << (int)rcvMsg.Data[i] << " ";
 			}
 			cout << endl;
-
-
-			tx.Format(_T("%X %X %X %X %X %X %X %X", sendData.Data[0], sendData.Data[1], sendData.Data[2], sendData.Data[3]
-				, sendData.Data[4], sendData.Data[5], sendData.Data[6], sendData.Data[7]));
-			mTx.SetWindowTextW(rx);
 			
 			mProgress.SetWindowTextW(_T("데이터 읽기"));
 			errCode.Format(_T("%d"), result);
 			mErrCode.SetWindowTextW(errCode);
-			rx.Format(_T("%X %X %X %X %X %X %X %X", rcvMsg.Data[0], rcvMsg.Data[1], rcvMsg.Data[2], rcvMsg.Data[3]
-				, rcvMsg.Data[4], rcvMsg.Data[5], rcvMsg.Data[6], rcvMsg.Data[7]));
+			rx.Format(_T("%02X %02X %02X %02X %02X %02X %02X %02X"), rcvMsg.Data[0], rcvMsg.Data[1], rcvMsg.Data[2], rcvMsg.Data[3]
+				, rcvMsg.Data[4], rcvMsg.Data[5], rcvMsg.Data[6], rcvMsg.Data[7]);
 			mRx.SetWindowTextW(rx);
 
 		}
 		Sleep(delay);
 	}
-	return 0;
+	return;
 }
 
 void CLINProjectDlg::OnBnClickedStart()
@@ -383,4 +390,29 @@ void CLINProjectDlg::OnBnClickedPause()
 void CLINProjectDlg::OnBnClickedStop()
 {
 	wLIN_clear();
+}
+void CLINProjectDlg::OnBnClickedSend()
+{
+	CString temp;
+	int high, low, i;
+	CEdit* mTx[8] = { &mTx0, &mTx1, &mTx2, &mTx3, &mTx4, &mTx5, &mTx6, &mTx7 };
+
+	for (i = 0; i < 8; i++) {
+		temp = "";
+		mTx[i] -> GetWindowTextW(temp);
+		if (temp.GetLength() >= 2) {
+			high = (temp[0] > '9') ? temp[0] - 'A' + 10 : temp[0] - '0';
+			low = (temp[1] > '9') ? temp[1] - 'A' + 10 : temp[1] - '0';
+
+			sendData[i] = (high << 4) | low;
+		}
+		else if (temp.GetLength() == 1){
+			high = 0;
+			low = (temp[0] > '9') ? temp[0] - 'A' + 10 : temp[0] - '0';
+
+			sendData[i] = (high << 4) | low;
+		}
+	}
+
+	LIN_UpdateByteArray(hClient, hHw, frameId, 0, 8, &sendData[0]);
 }

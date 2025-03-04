@@ -2,6 +2,7 @@
 // LIN_ProjectDlg.h: 헤더 파일
 //
 #include "PLinApi.h"
+#include <thread>
 
 #pragma once
 
@@ -26,7 +27,7 @@ public:
 	int wLIN_start();
 	int wLIN_pause();
 	int wLIN_clear();
-	int wReadData();
+	void wReadData();
 
 // 구현입니다.
 protected:
@@ -43,8 +44,13 @@ public:
 	afx_msg void OnBnClickedPause();
 	afx_msg void OnBnClickedStart();
 
-	// LIN
+	// 스레드
+	/*CWinThread* m_pThread;
+	bool m_bThreadRunning;
 
+	UINT CLINProjectDlg::wReadDataThread(LPVOID pParam);*/
+
+	// LIN
 	TLINError result;
 
 	HLINCLIENT hClient;
@@ -58,13 +64,15 @@ public:
 	int Lengths[LIN_MAX_SCHEDULES] = { 8, 8 };
 	TLINScheduleSlot Schedules[LIN_MAX_SCHEDULES] = {};
 
+	BYTE frameId = 0x18; // 예시
+
 	TLINRcvMsg rcvMsg = {};
 	int delay = 200;
 	CString cst;
 	CString flag;
 
 	BYTE sendData[8] = { 0, 0, 0, 1, 0, 0, 0, 0 };
-	BYTE data2[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+	BYTE data[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 
 	int schedule_position = 0;
 	BOOL onPause = false;
@@ -77,6 +85,14 @@ public:
 
 	CStatic mProgress;
 	CStatic mErrCode;
-	CStatic mTx;
 	CStatic mRx;
+	CEdit mTx0;
+	CEdit mTx1;
+	CEdit mTx2;
+	CEdit mTx3;
+	CEdit mTx4;
+	CEdit mTx5;
+	CEdit mTx6;
+	CEdit mTx7;
+	afx_msg void OnBnClickedSend();
 };
