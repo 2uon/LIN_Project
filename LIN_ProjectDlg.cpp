@@ -7,6 +7,7 @@
 #include "LIN_Project.h"
 #include "LIN_ProjectDlg.h"
 #include "afxdialogex.h"
+#include "StdClass.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -59,12 +60,19 @@ CLINProjectDlg::CLINProjectDlg(CWnd* pParent /*=nullptr*/)
 void CLINProjectDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
+	DDX_Control(pDX, IDC_Progress, mProgress);
+	DDX_Control(pDX, IDC_ErrCode, mErrCode);
+	DDX_Control(pDX, IDC_TX, mTx);
+	DDX_Control(pDX, IDC_RX, mRx);
 }
 
 BEGIN_MESSAGE_MAP(CLINProjectDlg, CDialogEx)
 	ON_WM_SYSCOMMAND()
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
+	ON_BN_CLICKED(IDC_Start, &CLINProjectDlg::OnBnClickedStart)
+	ON_BN_CLICKED(IDC_Pause, &CLINProjectDlg::OnBnClickedPause)
+	ON_BN_CLICKED(IDC_Stop, &CLINProjectDlg::OnBnClickedStop)
 END_MESSAGE_MAP()
 
 
@@ -153,3 +161,226 @@ HCURSOR CLINProjectDlg::OnQueryDragIcon()
 	return static_cast<HCURSOR>(m_hIcon);
 }
 
+CLINProjectDlg::~CLINProjectDlg() {
+	wLIN_clear();
+}
+
+int CLINProjectDlg::wLIN_connect() {
+	// 클라이언트 생성
+
+	result = LIN_RegisterClient(const_cast<char*>("Client"), 0, &hClient);
+
+	mProgress.SetWindowTextW(_T("클라이언트 생성"));
+	errCode.Format(_T("%d"), result);
+	mErrCode.SetWindowTextW(errCode);
+
+
+	// 하드웨어 등록
+	for (HLINHW hw : HW_TYPES) {
+		hHw = hw;
+		result = LIN_ConnectClient(hClient, hHw);
+		if (result == errOK) {
+			break;
+		}
+	}
+	mProgress.SetWindowTextW(_T("하드웨어 등록"));
+	errCode.Format(_T("%d"), result);
+	mErrCode.SetWindowTextW(errCode);
+
+	if (result != errOK) {
+		hHw = 0;
+	}
+
+	// 하드웨어 초기화 (마스터 모드, 19200 bit rate)
+	result = LIN_InitializeHardware(hClient, hHw, modMaster, 19200);
+
+	mProgress.SetWindowTextW(_T("하드웨어 초기화"));
+	errCode.Format(_T("%d"), result);
+	mErrCode.SetWindowTextW(errCode);
+
+
+	if (result != errOK) {
+		LIN_DisconnectClient(hClient, hHw);
+		LIN_RemoveClient(hClient);
+	}
+	// 프레임 id 초기화
+	for (BYTE frameId : FRAME_IDS) {
+		result = LIN_RegisterFrameId(hClient, hHw, frameId, frameId);
+	}
+
+	// 프레임 엔트리 설정
+	//for (int i = 0; i < LIN_MAX_SCHEDULES; i++) {
+	//	Frames[i] = {};
+	//	Frames[i].FrameId = FRAME_IDS[i];
+	//	Frames[i].Direction = Directions[i];
+	//	Frames[i].ChecksumType = cstEnhanced;
+	//	Frames[i].Length = Lengths[i];
+	//	memcpy(Frames[i].InitialData, &data[i], sizeof(data[0]));
+
+
+	//	result = LIN_SetFrameEntry(hClient, hHw, &Frames[i]);
+	//}
+	Frames[0] = {};
+	Frames[0].FrameId = FRAME_IDS[0];
+	Frames[0].Direction = Directions[0];
+	Frames[0].ChecksumType = cstEnhanced;
+	Frames[0].Length = Lengths[0];
+	memcpy(Frames[0].InitialData, &sendData[0], sizeof(sendData));
+	Frames[0].Flags = FRAME_FLAG_RESPONSE_ENABLE;
+
+	result = LIN_SetFrameEntry(hClient, hHw, &Frames[0]);
+
+	Frames[1] = {};
+	Frames[1].FrameId = FRAME_IDS[1];
+	Frames[1].Direction = Directions[1];
+	Frames[1].ChecksumType = cstEnhanced;
+	Frames[1].Length = Lengths[1];
+	memset(Frames[1].InitialData, 0, sizeof(sendData));
+
+	result = LIN_SetFrameEntry(hClient, hHw, &Frames[1]);
+
+	// 스케줄 설정 (더미)
+	Schedules[0].Type = sltUnconditional;
+	Schedules[0].FrameId[0] = FRAME_IDS[0];
+	Schedules[0].Delay = delay;
+
+	Schedules[1].Type = sltUnconditional;
+	Schedules[1].FrameId[0] = FRAME_IDS[1];
+	Schedules[1].Delay = delay;
+
+	result = LIN_SetSchedule(hClient, hHw, 0, Schedules, 2);
+
+	mProgress.SetWindowTextW(_T("스케줄 설정"));
+	errCode.Format(_T("%d"), result);
+	mErrCode.SetWindowTextW(errCode);
+
+	return 0;
+}
+
+int CLINProjectDlg::wLIN_start() {
+	// 버스 깨우기
+	result = LIN_XmtWakeUp(hClient, hHw);
+
+	// 정지 상태일 때 (재시작)
+	if (onPause) {
+		result = LIN_ResumeSchedule(hClient, hHw);
+
+		mProgress.SetWindowTextW(_T("스케줄 재시작"));
+		errCode.Format(_T("%d"), result);
+		mErrCode.SetWindowTextW(errCode);
+	}
+	// 정지 상태가 아닐 때 (시작)
+	else {
+		result = LIN_StartSchedule(hClient, hHw, 0);
+
+		mProgress.SetWindowTextW(_T("스케줄 시작"));
+		errCode.Format(_T("%d"), result);
+		mErrCode.SetWindowTextW(errCode);
+	}
+	
+	// 시작/재시작 성공 시 읽기 시작
+	if (result == errOK) {
+		wReadData();
+	}
+
+	return 0;
+}
+
+int CLINProjectDlg::wLIN_pause() {
+	// 스케줄 정지
+	result = LIN_SuspendSchedule(hClient, hHw);
+	if (result == errOK) {
+		onPause = true;
+	}
+	mProgress.SetWindowTextW(_T("스케줄 정지"));
+	errCode.Format(_T("%d"), result);
+	mErrCode.SetWindowTextW(errCode);
+
+	return 0;
+}
+
+int CLINProjectDlg::wLIN_clear() {
+	// 스케줄 삭제, 하드웨어 연결 해제
+	result = LIN_DeleteSchedule(hClient, hHw, schedule_position);
+	result = LIN_DisconnectClient(hClient, hHw);
+
+	mProgress.SetWindowTextW(_T("연결 해제"));
+	errCode.Format(_T("%d"), result);
+	mErrCode.SetWindowTextW(errCode);
+
+	
+	onPause = false;
+	onClear = true;
+	hHw = 0;
+	return 0;
+}
+
+int CLINProjectDlg::wReadData() {
+	// 필터 설정
+	unsigned __int64 Filter = 0xFFFFFFFFFFFFFFFF;
+	LIN_SetClientFilter(hClient, hHw, Filter);
+
+	while (true) {
+		// 읽기 정지 (정지, 연결 해제)
+		if (onPause) {
+			break;
+		}
+		if (onClear) {
+			onClear = false;
+			break;
+		}
+
+		// 데이터 읽기
+		result = LIN_Read(hClient, &rcvMsg);
+		if (result != errOK) {
+			cout << "데이터 읽기 실패 :" << result << endl;
+
+			mProgress.SetWindowTextW(_T("데이터 읽기"));
+			errCode.Format(_T("%d"), result);
+			mErrCode.SetWindowTextW(errCode);
+
+		}
+		else {
+			cout << "데이터 읽기 성공 frame id :" << (rcvMsg.FrameId & 0x3F) << endl;
+			cout << "Data :";
+
+			for (int i = 0; i < 8; i++) {
+				cout << hex << uppercase << (int)rcvMsg.Data[i] << " ";
+			}
+			cout << endl;
+
+
+			tx.Format(_T("%X %X %X %X %X %X %X %X", sendData.Data[0], sendData.Data[1], sendData.Data[2], sendData.Data[3]
+				, sendData.Data[4], sendData.Data[5], sendData.Data[6], sendData.Data[7]));
+			mTx.SetWindowTextW(rx);
+			
+			mProgress.SetWindowTextW(_T("데이터 읽기"));
+			errCode.Format(_T("%d"), result);
+			mErrCode.SetWindowTextW(errCode);
+			rx.Format(_T("%X %X %X %X %X %X %X %X", rcvMsg.Data[0], rcvMsg.Data[1], rcvMsg.Data[2], rcvMsg.Data[3]
+				, rcvMsg.Data[4], rcvMsg.Data[5], rcvMsg.Data[6], rcvMsg.Data[7]));
+			mRx.SetWindowTextW(rx);
+
+		}
+		Sleep(delay);
+	}
+	return 0;
+}
+
+void CLINProjectDlg::OnBnClickedStart()
+{
+	if (hHw == 0) {
+		wLIN_connect();
+	}
+	wLIN_start();
+}
+
+void CLINProjectDlg::OnBnClickedPause()
+{
+	wLIN_pause();
+}
+
+void CLINProjectDlg::OnBnClickedStop()
+{
+	wLIN_clear();
+}
