@@ -52,7 +52,7 @@ END_MESSAGE_MAP()
 
 
 CLINProjectDlg::CLINProjectDlg(CWnd* pParent /*=nullptr*/)
-	: CDialogEx(IDD_LIN_PROJECT_DIALOG, pParent)
+	: CDialogEx(IDD_LIN_PROJECT_DIALOG, pParent), m_pThread(nullptr), m_bThreadRunning(false)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
@@ -289,8 +289,9 @@ int CLINProjectDlg::wLIN_start() {
 	}
 	
 	// 시작/재시작 성공 시 읽기 시작
-	if (result == errOK) {
-		wReadData();
+	if (result == errOK && !m_bThreadRunning) {
+		m_bThreadRunning = true;
+		m_pThread = AfxBeginThread(wReadDataThread, this);
 	}
 
 	return 0;
@@ -327,12 +328,20 @@ int CLINProjectDlg::wLIN_clear() {
 	return 0;
 }
 
+UINT CLINProjectDlg::wReadDataThread(LPVOID pParam) {
+	CLINProjectDlg* pDlg = reinterpret_cast<CLINProjectDlg*>(pParam);
+	if (pDlg) {
+		pDlg->wReadData();  // 실제 데이터 읽기 함수 실행
+	}
+	return 0;
+}
+
 void CLINProjectDlg::wReadData() {
 	// 필터 설정
 	unsigned __int64 Filter = 0xFFFFFFFFFFFFFFFF;
 	LIN_SetClientFilter(hClient, hHw, Filter);
 
-	while (true) {
+	while (m_bThreadRunning) {
 		// 읽기 정지 (정지, 연결 해제)
 		if (onPause) {
 			break;
@@ -376,20 +385,20 @@ void CLINProjectDlg::wReadData() {
 
 void CLINProjectDlg::OnBnClickedStart()
 {
-	if (hHw == 0) {
-		wLIN_connect();
-	}
+	wLIN_connect();
 	wLIN_start();
 }
 
 void CLINProjectDlg::OnBnClickedPause()
 {
 	wLIN_pause();
+	m_bThreadRunning = false;
 }
 
 void CLINProjectDlg::OnBnClickedStop()
 {
 	wLIN_clear();
+	m_bThreadRunning = false;
 }
 void CLINProjectDlg::OnBnClickedSend()
 {

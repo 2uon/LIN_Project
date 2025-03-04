@@ -43,12 +43,13 @@ public:
 	afx_msg void OnBnClickedStop();
 	afx_msg void OnBnClickedPause();
 	afx_msg void OnBnClickedStart();
+	afx_msg void OnBnClickedSend();
 
 	// 스레드
-	/*CWinThread* m_pThread;
+	CWinThread* m_pThread;
 	bool m_bThreadRunning;
 
-	UINT CLINProjectDlg::wReadDataThread(LPVOID pParam);*/
+	static UINT WINAPI wReadDataThread(LPVOID pParam);
 
 	// LIN
 	TLINError result;
@@ -94,5 +95,4 @@ public:
 	CEdit mTx5;
 	CEdit mTx6;
 	CEdit mTx7;
-	afx_msg void OnBnClickedSend();
 };
