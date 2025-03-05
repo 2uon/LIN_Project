@@ -7,7 +7,6 @@
 #include "LIN_Project.h"
 #include "LIN_ProjectDlg.h"
 #include "afxdialogex.h"
-#include "StdClass.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -62,7 +61,6 @@ void CLINProjectDlg::DoDataExchange(CDataExchange* pDX)
 	CDialogEx::DoDataExchange(pDX);
 	DDX_Control(pDX, IDC_Progress, mProgress);
 	DDX_Control(pDX, IDC_ErrCode, mErrCode);
-	DDX_Control(pDX, IDC_RX, mRx);
 	DDX_Control(pDX, IDC_Tx0, mTx0);
 	DDX_Control(pDX, IDC_Tx1, mTx1);
 	DDX_Control(pDX, IDC_Tx2, mTx2);
@@ -71,6 +69,12 @@ void CLINProjectDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_Tx5, mTx5);
 	DDX_Control(pDX, IDC_Tx6, mTx6);
 	DDX_Control(pDX, IDC_Tx7, mTx7);
+	DDX_Control(pDX, IDC_TraceList, mTraceList);
+	DDX_Control(pDX, IDC_FrameName, mFrameName);
+	DDX_Control(pDX, IDC_FrameId, mFrameId);
+	DDX_Control(pDX, IDC_Delay, mDelay);
+	DDX_Control(pDX, IDC_Trigger, mTrigger);
+	DDX_Control(pDX, IDC_LogFile, mFileName);
 }
 
 BEGIN_MESSAGE_MAP(CLINProjectDlg, CDialogEx)
@@ -81,6 +85,8 @@ BEGIN_MESSAGE_MAP(CLINProjectDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_Pause, &CLINProjectDlg::OnBnClickedPause)
 	ON_BN_CLICKED(IDC_Stop, &CLINProjectDlg::OnBnClickedStop)
 	ON_BN_CLICKED(IDC_SEND, &CLINProjectDlg::OnBnClickedSend)
+	ON_BN_CLICKED(IDC_OpenLog, &CLINProjectDlg::OnBnClickedOpenlog)
+	ON_BN_CLICKED(IDC_Signal, &CLINProjectDlg::OnBnClickedSignal)
 END_MESSAGE_MAP()
 
 
@@ -116,6 +122,15 @@ BOOL CLINProjectDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// 작은 아이콘을 설정합니다.
 
 	// TODO: 여기에 추가 초기화 작업을 추가합니다.
+	// List 초기화
+	CRect rt;
+	mTraceList.GetWindowRect(&rt);
+	mTraceList.SetExtendedStyle(LVS_EX_GRIDLINES | LVS_EX_FULLROWSELECT);
+
+	mTraceList.InsertColumn(0, TEXT("Frame ID"), LVCFMT_LEFT, rt.Width() * 0.2);
+	mTraceList.InsertColumn(1, TEXT("Frame Data"), LVCFMT_LEFT, rt.Width() * 0.6);
+	mTraceList.InsertColumn(2, TEXT("Error Flags"), LVCFMT_LEFT, rt.Width() * 0.2);
+
 
 	return TRUE;  // 포커스를 컨트롤에 설정하지 않으면 TRUE를 반환합니다.
 }
@@ -270,6 +285,7 @@ int CLINProjectDlg::wLIN_connect() {
 int CLINProjectDlg::wLIN_start() {
 	// 버스 깨우기
 	result = LIN_XmtWakeUp(hClient, hHw);
+	onPause = false;
 
 	// 정지 상태일 때 (재시작)
 	if (onPause) {
@@ -301,13 +317,11 @@ int CLINProjectDlg::wLIN_start() {
 int CLINProjectDlg::wLIN_pause() {
 	// 스케줄 정지
 	result = LIN_SuspendSchedule(hClient, hHw);
-	if (result == errOK) {
-		onPause = true;
-	}
 	mProgress.SetWindowTextW(_T("스케줄 정지"));
 	errCode.Format(_T("%d"), result);
 	mErrCode.SetWindowTextW(errCode);
 
+	onPause = true;
 	return 0;
 }
 
@@ -324,7 +338,6 @@ int CLINProjectDlg::wLIN_clear() {
 	
 	onPause = false;
 	onClear = true;
-	hHw = 0;
 	return 0;
 }
 
@@ -373,9 +386,9 @@ void CLINProjectDlg::wReadData() {
 			mProgress.SetWindowTextW(_T("데이터 읽기"));
 			errCode.Format(_T("%d"), result);
 			mErrCode.SetWindowTextW(errCode);
-			rx.Format(_T("%02X %02X %02X %02X %02X %02X %02X %02X"), rcvMsg.Data[0], rcvMsg.Data[1], rcvMsg.Data[2], rcvMsg.Data[3]
+			/*rx.Format(_T("%02X %02X %02X %02X %02X %02X %02X %02X"), rcvMsg.Data[0], rcvMsg.Data[1], rcvMsg.Data[2], rcvMsg.Data[3]
 				, rcvMsg.Data[4], rcvMsg.Data[5], rcvMsg.Data[6], rcvMsg.Data[7]);
-			mRx.SetWindowTextW(rx);
+			mRx.SetWindowTextW(rx);*/
 
 		}
 		Sleep(delay);
@@ -385,8 +398,10 @@ void CLINProjectDlg::wReadData() {
 
 void CLINProjectDlg::OnBnClickedStart()
 {
-	wLIN_connect();
-	wLIN_start();
+	if (!m_bThreadRunning) {
+		wLIN_connect();
+		wLIN_start();
+	}
 }
 
 void CLINProjectDlg::OnBnClickedPause()
@@ -424,4 +439,26 @@ void CLINProjectDlg::OnBnClickedSend()
 	}
 
 	LIN_UpdateByteArray(hClient, hHw, frameId, 0, 8, &sendData[0]);
+}
+void CLINProjectDlg::OnBnClickedOpenlog()
+{
+	static TCHAR BASED_CODE szFilter[] = _T("데이터베이스 (*.ldf) | *.ldf;||");
+
+	CFileDialog dlg(TRUE, _T("*.ldf"), _T("database"), OFN_HIDEREADONLY, szFilter);
+
+	if (IDOK == dlg.DoModal())
+
+	{
+
+		CString pathName = dlg.GetFileName();
+		MessageBox(pathName);
+		mFileName.SetWindowTextW(pathName);
+
+
+	}
+}
+
+void CLINProjectDlg::OnBnClickedSignal()
+{
+	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
 }

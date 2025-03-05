@@ -2,7 +2,9 @@
 // LIN_ProjectDlg.h: 헤더 파일
 //
 #include "PLinApi.h"
+#include "StdClass.h"
 #include <thread>
+#include <vector>
 
 #pragma once
 
@@ -45,11 +47,84 @@ public:
 	afx_msg void OnBnClickedStart();
 	afx_msg void OnBnClickedSend();
 
+	afx_msg void OnBnClickedOpenlog();
+	afx_msg void OnBnClickedSignal();
+
 	// 스레드
 	CWinThread* m_pThread;
 	bool m_bThreadRunning;
 
 	static UINT WINAPI wReadDataThread(LPVOID pParam);
+
+	// 파일 데이터
+	float w_LIN_speed;
+	
+	// Nodes
+	string w_Client_name;
+	int w_delay;
+	int w_IFS;
+	string w_Slave_names[LIN_MAX_SCHEDULES];
+
+	// Signals
+	struct w_Signal {
+		string name;
+		int dataLength;
+		int defaultValue;
+		string txNode;
+		string rxNode;
+	};
+	vector<w_Signal> w_Signals;
+	
+	// Diagnostic_signals
+	struct w_DiagnosticSignal {
+		string name;
+		int size;
+		int value;
+	};
+	vector<w_DiagnosticSignal> w_DiagnosticSignals;
+
+	// Frames
+	struct w_DataStruct {
+		string name;
+		int start;
+	};
+	struct w_Frame {
+		string name;
+		int id;
+		string txNode;
+		int length;
+		vector<w_DataStruct> w_Data;
+	};
+	vector<w_Frame> w_Frames;
+	
+	// Diagnostic_frames
+	struct w_DiagnosticSignal {
+		string name;
+		int start;
+	};
+	struct w_DiagnosticFrame {
+		string name;
+		int id;
+		vector<w_DiagnosticSignal> signals;
+	};
+	vector<w_DiagnosticFrame> w_DiagnosticFrames;
+
+	// Node_attributes
+	struct w_NodeAttribute {
+		string name;
+		string linProtocol;
+		uint8_t configuredNAD;
+		uint8_t initialNAD;
+		uint16_t productID1;
+		uint16_t productID2;
+		uint16_t productVersion;
+		int P2_min;
+		int ST_min;
+		int N_As_timeout;
+		int N_Nr_timeout;
+		vector<string> configurable_frames;
+	};
+	/////////////////////////////////////// Signal_encoding_types 
 
 	// LIN
 	TLINError result;
@@ -82,7 +157,6 @@ public:
 	CString progress;
 	CString errCode;
 	CString tx;
-	CString rx;
 
 	CStatic mProgress;
 	CStatic mErrCode;
@@ -95,4 +169,10 @@ public:
 	CEdit mTx5;
 	CEdit mTx6;
 	CEdit mTx7;
+	CListCtrl mTraceList;
+	CComboBox mFrameName;
+	CComboBox mFrameId;
+	CEdit mDelay;
+	CComboBox mTrigger;
+	CEdit mFileName;
 };
