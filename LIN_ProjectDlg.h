@@ -1,10 +1,9 @@
 ﻿
 // LIN_ProjectDlg.h: 헤더 파일
 //
-#include "PLinApi.h"
 #include "StdClass.h"
+#include "LIN_Project.h"
 #include <thread>
-#include <vector>
 
 #pragma once
 
@@ -31,6 +30,20 @@ public:
 	int wLIN_clear();
 	void wReadData();
 
+	// 파싱 함수
+	int w_LDF_parse(string filePath);
+
+	void w_Parser_Config(string& line);
+	void w_Parser_Nodes(string& line);
+	void w_Parser_Signals(string& line);
+	void w_Parser_DiagnosticSignals(string& line);
+	void w_Parser_Frames(string& line);
+	void w_Parser_DiagnosticFrames(string& line);
+	void w_Parser_NodeAttributes(string& line);
+	void w_Parser_ScheduleTables(string& line);
+	void w_Parser_SignalEncodingTypes(string& line);
+	void w_Parser_SignalRepresentation(string& line);
+
 // 구현입니다.
 protected:
 	HICON m_hIcon;
@@ -41,6 +54,7 @@ protected:
 	afx_msg void OnPaint();
 	afx_msg HCURSOR OnQueryDragIcon();
 	DECLARE_MESSAGE_MAP()
+
 public:
 	afx_msg void OnBnClickedStop();
 	afx_msg void OnBnClickedPause();
@@ -57,8 +71,10 @@ public:
 	static UINT WINAPI wReadDataThread(LPVOID pParam);
 
 	// 파일 데이터
+	float w_LIN_protocol_version;
+	float w_LIN_language_version;
 	float w_LIN_speed;
-	
+
 	// Nodes
 	string w_Client_name;
 	int w_delay;
@@ -74,7 +90,7 @@ public:
 		string rxNode;
 	};
 	vector<w_Signal> w_Signals;
-	
+
 	// Diagnostic_signals
 	struct w_DiagnosticSignal {
 		string name;
@@ -96,16 +112,16 @@ public:
 		vector<w_DataStruct> w_Data;
 	};
 	vector<w_Frame> w_Frames;
-	
+
 	// Diagnostic_frames
-	struct w_DiagnosticSignal {
+	struct w_DiagnosticData {
 		string name;
 		int start;
 	};
 	struct w_DiagnosticFrame {
 		string name;
 		int id;
-		vector<w_DiagnosticSignal> signals;
+		vector<w_DiagnosticData> data;
 	};
 	vector<w_DiagnosticFrame> w_DiagnosticFrames;
 
@@ -124,7 +140,34 @@ public:
 		int N_Nr_timeout;
 		vector<string> configurable_frames;
 	};
-	/////////////////////////////////////// Signal_encoding_types 
+	vector<w_NodeAttribute> w_NodeAttributes;
+
+	// Signal_encoding_types 
+	struct w_LogicalValue {
+		int value;
+		string description;
+	};
+	struct w_PhysicalValue {
+		int minValue;       // 최소값
+		int maxValue;       // 최대값
+		int scale;          // 스케일 값
+		int offset;         // 오프셋 값
+		string unit;	    // 단위 (예: "STEP", "HW_VER" ...)
+	};
+	struct w_SignalEncoding {
+		std::string name;  // 신호 이름 (예: "C_3way1_LinError")
+		std::vector<w_LogicalValue> logicalValues; // 논리 값 리스트
+		w_PhysicalValue physicalValue; // 물리 값 (존재하지 않을 경우 기본값)
+		bool isPhysical;   // 물리 값인지 여부 (true: physical, false: logical)
+	};
+	vector<w_SignalEncoding> w_SignalEncodings;
+
+	// Signal_representation
+	struct w_SignalRepresentation {
+		string name;
+		vector<string> signals;
+	};
+	vector<w_SignalRepresentation> w_SignalRepresentations;
 
 	// LIN
 	TLINError result;

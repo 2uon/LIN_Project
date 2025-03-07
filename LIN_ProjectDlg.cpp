@@ -4,9 +4,10 @@
 
 #include "pch.h"
 #include "framework.h"
-#include "LIN_Project.h"
 #include "LIN_ProjectDlg.h"
 #include "afxdialogex.h"
+#include <fstream>
+#include <sstream>
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -187,6 +188,177 @@ HCURSOR CLINProjectDlg::OnQueryDragIcon()
 CLINProjectDlg::~CLINProjectDlg() {
 	wLIN_clear();
 }
+
+
+int CLINProjectDlg::w_LDF_parse(string filePath) {
+	ifstream file(filePath);
+	if (!file.is_open()) {
+		return -1;
+	}
+	CString FilePath(filePath.c_str());
+	MessageBox(FilePath);
+	mFileName.SetWindowTextW(FilePath);
+
+	string line;
+	string section = "";
+	while (getline(file, line)) {
+		//
+		if (line.find("Nodes {") != string::npos) {
+			section = "Nodes";
+		}
+		else if (line.find("Signals {") != string::npos) {
+			section = "Signals";
+		}
+		else if (line.find("Diagnostic_signals {") != string::npos) {
+			section = "Diagnostic_signals";
+		}
+		else if (line.find("Frames {") != string::npos) {
+			section = "Frames";
+		}
+		else if (line.find("Diagnostic_frames {") != string::npos) {
+			section = "Diagnostic_frames";
+		}
+		else if (line.find("Node_attributes {") != string::npos) {
+			section = "Node_attributes";
+		}
+		else if (line.find("Schedule_tables {") != string::npos) {
+			section = "Schedule_tables";
+		}
+		else if (line.find("Signal_encoding_types {") != string::npos) {
+			section = "Signal_encoding_types";
+		}
+		else if (line.find("Signal_representation {") != string::npos) {
+			section = "Signal_representation";
+		}
+		else if (line.find("Signal_representation {") != string::npos) {
+			section = "Signal_representation";
+		}
+
+		// Config
+		else if (line.find("LIN_protocol_version = ") != string::npos) {
+			section = "";
+			w_Parser_Config(line);
+		}
+		else if (line.find("LIN_language_version = ") != string::npos) {
+			section = "";
+			w_Parser_Config(line);
+		}
+		else if (line.find("LIN_speed = ") != string::npos) {
+			section = "";
+			w_Parser_Config(line);
+		}
+
+		//
+		else if (line.find("}") != string::npos) {
+			section = "";
+		}
+
+		//
+		else if (section == "Nodes") {
+			w_Parser_Nodes(line);
+		}
+		else if (section == "Signals") {
+			w_Parser_Signals(line);
+		}
+		else if (section == "Diagnostic_signals") {
+			w_Parser_DiagnosticSignals(line);
+		}
+		else if (section == "Frames") {
+			w_Parser_Frames(line);
+		}
+		else if (section == "Diagnostic_frames") {
+			w_Parser_DiagnosticFrames(line);
+		}
+		else if (section == "Node_attributes") {
+			w_Parser_NodeAttributes(line);
+		}
+		else if (section == "Schedule_tables") {
+			w_Parser_ScheduleTables(line);
+		}
+		else if (section == "Signal_encoding_types") {
+			w_Parser_SignalEncodingTypes(line);
+		}
+		else if (section == "Signal_representation") {
+			w_Parser_SignalRepresentation(line);
+		}
+	}
+
+	file.close();
+
+	return 0;
+}
+
+void CLINProjectDlg::w_Parser_Config(string& line) {
+	string key, value;
+	size_t pos = line.find('=');
+	if (pos == string::npos) return; // '=' 없으면 무시
+
+	key = line.substr(0, pos);
+	value = line.substr(pos + 1);
+
+	// 공백 및 특수문자 제거
+	key.erase(remove(key.begin(), key.end(), ' '), key.end());
+	key.erase(remove(key.begin(), key.end(), '\"'), key.end());
+	value.erase(remove(value.begin(), value.end(), ' '), value.end());
+	value.erase(remove(value.begin(), value.end(), '\"'), value.end());
+	value.erase(remove(value.begin(), value.end(), ';'), value.end());
+
+	// 값 저장
+	if (key == "LIN_protocol_version") {
+		w_LIN_protocol_version = stof(value);
+
+		//CString test;
+		//test.Format(_T("%f"), w_LIN_protocol_version);
+		//MessageBox(test);
+	}
+	else if (key == "LIN_language_version") {
+		w_LIN_language_version = stof(value);
+	}
+	else if (key == "LIN_speed") {
+		size_t kbps_pos = value.find("kbps");
+		if (kbps_pos != string::npos) {
+			value = value.substr(0, kbps_pos); // "kbps" 제거
+		}
+		w_LIN_speed = stof(value);
+	}
+}
+
+void CLINProjectDlg::w_Parser_Nodes(string& line) {
+
+}
+
+void CLINProjectDlg::w_Parser_Signals(string& line) {
+
+}
+
+void CLINProjectDlg::w_Parser_DiagnosticSignals(string& line) {
+
+}
+
+void CLINProjectDlg::w_Parser_Frames(string& line) {
+
+}
+
+void CLINProjectDlg::w_Parser_DiagnosticFrames(string& line) {
+
+}
+
+void CLINProjectDlg::w_Parser_NodeAttributes(string& line) {
+
+}
+
+void CLINProjectDlg::w_Parser_ScheduleTables(string& line) {
+
+}
+
+void CLINProjectDlg::w_Parser_SignalEncodingTypes(string& line) {
+
+}
+
+void CLINProjectDlg::w_Parser_SignalRepresentation(string& line) {
+
+}
+
 
 // LIN 연결 및 세팅
 int CLINProjectDlg::wLIN_connect() {
@@ -444,16 +616,19 @@ void CLINProjectDlg::OnBnClickedOpenlog()
 {
 	static TCHAR BASED_CODE szFilter[] = _T("데이터베이스 (*.ldf) | *.ldf;||");
 
-	CFileDialog dlg(TRUE, _T("*.ldf"), _T("database"), OFN_HIDEREADONLY, szFilter);
+	CFileDialog dlg(TRUE, _T("*.ldf"), _T(""), OFN_HIDEREADONLY, szFilter);
 
 	if (IDOK == dlg.DoModal())
 
 	{
 
-		CString pathName = dlg.GetFileName();
-		MessageBox(pathName);
-		mFileName.SetWindowTextW(pathName);
+		CString path = dlg.GetPathName();
 
+		// CString → std::string 변환
+		CT2CA pszConvertedAnsiString(path);
+		string temp(pszConvertedAnsiString);
+
+		w_LDF_parse(temp); // LIN 설정 파일 파싱
 
 	}
 }
