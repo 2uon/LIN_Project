@@ -76,6 +76,7 @@ void CLINProjectDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_Delay, mDelay);
 	DDX_Control(pDX, IDC_Trigger, mTrigger);
 	DDX_Control(pDX, IDC_LogFile, mFileName);
+	DDX_Control(pDX, IDC_SignalList, mSignalList);
 }
 
 BEGIN_MESSAGE_MAP(CLINProjectDlg, CDialogEx)
@@ -124,13 +125,21 @@ BOOL CLINProjectDlg::OnInitDialog()
 
 	// TODO: 여기에 추가 초기화 작업을 추가합니다.
 	// List 초기화
-	CRect rt;
-	mTraceList.GetWindowRect(&rt);
+	CRect rtTrace;
+	mTraceList.GetWindowRect(&rtTrace);
 	mTraceList.SetExtendedStyle(LVS_EX_GRIDLINES | LVS_EX_FULLROWSELECT);
 
-	mTraceList.InsertColumn(0, TEXT("Frame ID"), LVCFMT_LEFT, rt.Width() * 0.2);
-	mTraceList.InsertColumn(1, TEXT("Frame Data"), LVCFMT_LEFT, rt.Width() * 0.6);
-	mTraceList.InsertColumn(2, TEXT("Error Flags"), LVCFMT_LEFT, rt.Width() * 0.2);
+	mTraceList.InsertColumn(0, TEXT("Frame ID"), LVCFMT_LEFT, rtTrace.Width() * 0.2);
+	mTraceList.InsertColumn(1, TEXT("Frame Data"), LVCFMT_LEFT, rtTrace.Width() * 0.6);
+	mTraceList.InsertColumn(2, TEXT("Error Flags"), LVCFMT_LEFT, rtTrace.Width() * 0.2);
+
+	CRect rtSignal;
+	mSignalList.GetWindowRect(&rtSignal);
+	mSignalList.SetExtendedStyle(LVS_EX_GRIDLINES | LVS_EX_FULLROWSELECT);
+
+	mSignalList.InsertColumn(0, TEXT(""), LVCFMT_LEFT, rtSignal.Width() * 0.15);
+	mSignalList.InsertColumn(1, TEXT(""), LVCFMT_LEFT, rtSignal.Width() * 0.15);
+	mSignalList.InsertColumn(2, TEXT("Name"), LVCFMT_LEFT, rtSignal.Width() * 0.7);
 
 
 	return TRUE;  // 포커스를 컨트롤에 설정하지 않으면 TRUE를 반환합니다.
@@ -264,15 +273,257 @@ int CLINProjectDlg::w_LDF_parse(string filePath) {
 			w_Parser_DiagnosticSignals(line);
 		}
 		else if (section == "Frames") {
-			w_Parser_Frames(line);
+			stringstream ss(line);
+			w_Frame frame;
+			getline(ss, frame.name, ':');
+
+			// 데이터 추출
+			string data;
+			getline(ss, data, ';');
+			stringstream dataStream(data);
+			string value;
+
+			getline(dataStream, value, ',');
+			frame.id = stoi(value);
+			getline(dataStream, value, ',');
+			frame.txNode = value;
+			getline(dataStream, value, ',');
+			frame.length = stoi(value);
+
+
+			while (true) {
+				getline(file, line);
+				if (line.find("}") != string::npos) {
+					w_Frames.push_back(frame);
+					break;
+				}
+				w_DataStruct dataStruct;
+				stringstream ss(line);
+				string data;
+				getline(ss, data, ';');
+
+				stringstream dataStream(data);
+				string value;
+				getline(dataStream, dataStruct.name, ',');
+				getline(dataStream, value, ',');
+				dataStruct.start = stoi(value);
+				frame.w_Data.push_back(dataStruct);
+			}
 		}
 		else if (section == "Diagnostic_frames") {
-			w_Parser_DiagnosticFrames(line);
+			stringstream ss(line);
+			w_DiagnosticFrame frame;
+			getline(ss, frame.name, ':');
+
+			// 데이터 추출
+			string data;
+			getline(ss, data, ';');
+			stringstream dataStream(data);
+			string value;
+
+			getline(dataStream, value, ',');
+			frame.id = stoi(value);
+
+			while (true) {
+				getline(file, line);
+				if (line.find("}") != string::npos) {
+					w_DiagnosticFrames.push_back(frame);
+					break;
+				}
+				w_DataStruct dataStruct;
+				stringstream ss(line);
+				string data;
+				getline(ss, data, ';');
+
+				stringstream dataStream(data);
+				string value;
+				getline(dataStream, dataStruct.name, ',');
+				getline(dataStream, value, ',');
+				dataStruct.start = stoi(value);
+				frame.w_Data.push_back(dataStruct);
+			}
 		}
 		else if (section == "Node_attributes") {
-			w_Parser_NodeAttributes(line);
+			stringstream ss(line);
+			w_NodeAttribute attribute;
+			getline(ss, attribute.name, ':');
+
+			// 데이터 추출
+			string data;
+			getline(ss, data, ';');
+			stringstream dataStream(data);
+			string value;
+
+			while (true) {
+				getline(file, line);
+				if (line.find("}") != string::npos) {
+					w_NodeAttributes.push_back(attribute);
+					break;
+				}
+				else if (line.find("LIN_protocol") == string::npos) {
+					string key, value;
+					size_t pos = line.find('=');
+
+					key = line.substr(0, pos);
+					value = line.substr(pos + 1);
+
+					// 공백 및 특수문자 제거
+					value.erase(remove(value.begin(), value.end(), ' '), value.end());
+					value.erase(remove(value.begin(), value.end(), '\"'), value.end());
+					value.erase(remove(value.begin(), value.end(), ';'), value.end());
+
+					attribute.linProtocol = stof(value);
+
+				}
+				else if (line.find("configured_NAD") == string::npos) {
+					string key, value;
+					size_t pos = line.find('=');
+
+					key = line.substr(0, pos);
+					value = line.substr(pos + 1);
+
+					// 공백 및 특수문자 제거
+					value.erase(remove(value.begin(), value.end(), ' '), value.end());
+					value.erase(remove(value.begin(), value.end(), '\"'), value.end());
+					value.erase(remove(value.begin(), value.end(), ';'), value.end());
+
+					attribute.configuredNAD = stof(value);
+				}
+				else if (line.find("initial_NAD") == string::npos) {
+					string key, value;
+					size_t pos = line.find('=');
+
+					key = line.substr(0, pos);
+					value = line.substr(pos + 1);
+
+					// 공백 및 특수문자 제거
+					value.erase(remove(value.begin(), value.end(), ' '), value.end());
+					value.erase(remove(value.begin(), value.end(), '\"'), value.end());
+					value.erase(remove(value.begin(), value.end(), ';'), value.end());
+
+					attribute.initialNAD = stof(value);
+				}
+				else if (line.find("product_id") == string::npos) {
+					string key, value;
+					size_t pos = line.find('=');
+
+					key = line.substr(0, pos);
+					value = line.substr(pos + 1);
+
+					// 공백 및 특수문자 제거
+					value.erase(remove(value.begin(), value.end(), ' '), value.end());
+					value.erase(remove(value.begin(), value.end(), '\"'), value.end());
+					value.erase(remove(value.begin(), value.end(), ';'), value.end());
+
+					stringstream ss(value);
+					string part;
+					vector<string> parts;
+					while (getline(ss, part, ',')) parts.push_back(part);
+					attribute.productID1 = stoi(parts[0], nullptr, 16);
+					attribute.productID2 = stoi(parts[1], nullptr, 16);
+					attribute.productVersion = stoi(parts[2]);
+				}
+				else if (line.find("response_error") == string::npos) {
+					string key, value;
+					size_t pos = line.find('=');
+
+					key = line.substr(0, pos);
+					value = line.substr(pos + 1);
+
+					// 공백 및 특수문자 제거
+					value.erase(remove(value.begin(), value.end(), ' '), value.end());
+					value.erase(remove(value.begin(), value.end(), '\"'), value.end());
+					value.erase(remove(value.begin(), value.end(), ';'), value.end());
+
+					attribute.responseErr = value;
+				}
+				else if (line.find("P2_min") == string::npos) {
+					string key, value;
+					size_t pos = line.find('=');
+
+					key = line.substr(0, pos);
+					value = line.substr(pos + 1);
+
+					// 공백 및 특수문자 제거
+					value.erase(remove(value.begin(), value.end(), ' '), value.end());
+					value.erase(remove(value.begin(), value.end(), '\"'), value.end());
+					value.erase(remove(value.begin(), value.end(), ';'), value.end());
+
+					size_t ms_pos = value.find("ms");
+					if (ms_pos != string::npos) {
+						value = value.substr(0, ms_pos); // "kbps" 제거
+					}
+					attribute.P2_min = stof(value);
+				}
+				else if (line.find("ST_min") == string::npos) {
+					string key, value;
+					size_t pos = line.find('=');
+
+					key = line.substr(0, pos);
+					value = line.substr(pos + 1);
+
+					// 공백 및 특수문자 제거
+					value.erase(remove(value.begin(), value.end(), ' '), value.end());
+					value.erase(remove(value.begin(), value.end(), '\"'), value.end());
+					value.erase(remove(value.begin(), value.end(), ';'), value.end());
+
+					size_t ms_pos = value.find("ms");
+					if (ms_pos != string::npos) {
+						value = value.substr(0, ms_pos); // "kbps" 제거
+					}
+					attribute.ST_min = stof(value);
+				}
+				else if (line.find("N_As_timeout") == string::npos) {
+					string key, value;
+					size_t pos = line.find('=');
+
+					key = line.substr(0, pos);
+					value = line.substr(pos + 1);
+
+					// 공백 및 특수문자 제거
+					value.erase(remove(value.begin(), value.end(), ' '), value.end());
+					value.erase(remove(value.begin(), value.end(), '\"'), value.end());
+					value.erase(remove(value.begin(), value.end(), ';'), value.end());
+
+					size_t ms_pos = value.find("ms");
+					if (ms_pos != string::npos) {
+						value = value.substr(0, ms_pos); // "kbps" 제거
+					}
+					attribute.N_As_timeout = stof(value);
+				}
+				else if (line.find("N_Cr_timeout") == string::npos) {
+					string key, value;
+					size_t pos = line.find('=');
+
+					key = line.substr(0, pos);
+					value = line.substr(pos + 1);
+
+					// 공백 및 특수문자 제거
+					value.erase(remove(value.begin(), value.end(), ' '), value.end());
+					value.erase(remove(value.begin(), value.end(), '\"'), value.end());
+					value.erase(remove(value.begin(), value.end(), ';'), value.end());
+
+					size_t ms_pos = value.find("ms");
+					if (ms_pos != string::npos) {
+						value = value.substr(0, ms_pos); // "kbps" 제거
+					}
+					attribute.N_Cr_timeout = stof(value);
+				}
+				else if (line.find("configurable_frames {") == string::npos) {
+					while (true) {
+						getline(file, line);
+						if (line.find("}") != string::npos) {
+							break;
+						}
+						stringstream ss(line);
+						string configurable_frame;
+						getline(ss, configurable_frame, ';');
+						attribute.configurable_frames.push_back(configurable_frame);
+					}
+				}
+			}
 		}
-		else if (section == "Schedule_tables") {
+		else if (section == "Schedule_tables") { /////////////////////////////////
 			w_Parser_ScheduleTables(line);
 		}
 		else if (section == "Signal_encoding_types") {
@@ -282,6 +533,22 @@ int CLINProjectDlg::w_LDF_parse(string filePath) {
 			w_Parser_SignalRepresentation(line);
 		}
 	}
+
+	// Nodes test
+	//for (int i = 0; i < 8; i++) {
+	//	CString test(w_Slave_names[i].c_str());
+	//	MessageBox(test);
+	//}
+	 
+	// Signals test
+	//CString test(w_Signals[0].txNode.c_str());
+	//MessageBox(_T("tx") + test);
+
+	// Frames test
+	//for (int i = 0; i < 8; i++) {
+	//	CString test(w_Frames[i].name.c_str());
+	//	MessageBox(test);
+	//}
 
 	file.close();
 
@@ -324,28 +591,73 @@ void CLINProjectDlg::w_Parser_Config(string& line) {
 }
 
 void CLINProjectDlg::w_Parser_Nodes(string& line) {
-
+	stringstream ss(line);
+	string key, temp;
+	ss >> key;
+	if (key == "Master:") {
+		ss >> w_Client_name >> w_delay >> temp >> w_IFS;
+	}
+	else if (key == "Slaves:") {
+		while (getline(ss, temp, ',')) {
+			temp.erase(remove(temp.begin(), temp.end(), ';'), temp.end());
+			w_Slave_names[slave_cnt++] = temp;
+		}
+	}
 }
 
 void CLINProjectDlg::w_Parser_Signals(string& line) {
+	stringstream ss(line);
+	w_Signal sig;
+	getline(ss, sig.name, ':');  // 신호 이름 추출
 
+	// 데이터 추출
+	string data;
+	getline(ss, data, ';');
+	stringstream dataStream(data);
+	string value;
+
+
+	getline(dataStream, value, ',');
+	sig.dataLength = stoi(value);
+	getline(dataStream, value, ',');
+	sig.defaultValue = stoi(value);
+	getline(dataStream, value, ',');
+	sig.txNode = value;
+	if (getline(dataStream, value, ',')) {
+		sig.rxNode = value; 
+	}
+	else {
+		sig.rxNode = ""; // 값이 없을 경우 기본값 설정
+	}
+
+	w_Signals.push_back(sig);
+
+	// 테스트
+	//CString test(sig.txNode.c_str());
+	//MessageBox(_T("tx") + test);
+	//CString test2(sig.rxNode.c_str());
+	//MessageBox(_T("rx") + test2);
 }
 
 void CLINProjectDlg::w_Parser_DiagnosticSignals(string& line) {
+	stringstream ss(line);
+	w_DiagnosticSignal sig;
+	getline(ss, sig.name, ':');
 
+	// 데이터 추출
+	string data;
+	getline(ss, data, ';');
+	stringstream dataStream(data);
+	string value;
+
+	getline(dataStream, value, ',');
+	sig.size = stoi(value);
+	getline(dataStream, value, ',');
+	sig.value = stoi(value);
+
+	w_DiagnosticSignals.push_back(sig);
 }
 
-void CLINProjectDlg::w_Parser_Frames(string& line) {
-
-}
-
-void CLINProjectDlg::w_Parser_DiagnosticFrames(string& line) {
-
-}
-
-void CLINProjectDlg::w_Parser_NodeAttributes(string& line) {
-
-}
 
 void CLINProjectDlg::w_Parser_ScheduleTables(string& line) {
 

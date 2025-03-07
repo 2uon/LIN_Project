@@ -37,9 +37,7 @@ public:
 	void w_Parser_Nodes(string& line);
 	void w_Parser_Signals(string& line);
 	void w_Parser_DiagnosticSignals(string& line);
-	void w_Parser_Frames(string& line);
-	void w_Parser_DiagnosticFrames(string& line);
-	void w_Parser_NodeAttributes(string& line);
+
 	void w_Parser_ScheduleTables(string& line);
 	void w_Parser_SignalEncodingTypes(string& line);
 	void w_Parser_SignalRepresentation(string& line);
@@ -79,6 +77,7 @@ public:
 	string w_Client_name;
 	int w_delay;
 	int w_IFS;
+	int slave_cnt = 0;
 	string w_Slave_names[LIN_MAX_SCHEDULES];
 
 	// Signals
@@ -114,14 +113,10 @@ public:
 	vector<w_Frame> w_Frames;
 
 	// Diagnostic_frames
-	struct w_DiagnosticData {
-		string name;
-		int start;
-	};
 	struct w_DiagnosticFrame {
 		string name;
 		int id;
-		vector<w_DiagnosticData> data;
+		vector<w_DataStruct> w_Data;
 	};
 	vector<w_DiagnosticFrame> w_DiagnosticFrames;
 
@@ -134,10 +129,11 @@ public:
 		uint16_t productID1;
 		uint16_t productID2;
 		uint16_t productVersion;
+		string responseErr;
 		int P2_min;
 		int ST_min;
 		int N_As_timeout;
-		int N_Nr_timeout;
+		int N_Cr_timeout;
 		vector<string> configurable_frames;
 	};
 	vector<w_NodeAttribute> w_NodeAttributes;
@@ -218,4 +214,5 @@ public:
 	CEdit mDelay;
 	CComboBox mTrigger;
 	CEdit mFileName;
+	CListCtrl mSignalList;
 };
