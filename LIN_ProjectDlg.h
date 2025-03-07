@@ -124,11 +124,11 @@ public:
 	struct w_NodeAttribute {
 		string name;
 		string linProtocol;
-		uint8_t configuredNAD;
-		uint8_t initialNAD;
-		uint16_t productID1;
-		uint16_t productID2;
-		uint16_t productVersion;
+		int configuredNAD;
+		int initialNAD;
+		int productID1;
+		int productID2;
+		int productVersion;
 		string responseErr;
 		int P2_min;
 		int ST_min;

@@ -346,7 +346,7 @@ int CLINProjectDlg::w_LDF_parse(string filePath) {
 		else if (section == "Node_attributes") {
 			stringstream ss(line);
 			w_NodeAttribute attribute;
-			getline(ss, attribute.name, ':');
+			getline(ss, attribute.name, '{');
 
 			// 데이터 추출
 			string data;
@@ -360,7 +360,7 @@ int CLINProjectDlg::w_LDF_parse(string filePath) {
 					w_NodeAttributes.push_back(attribute);
 					break;
 				}
-				else if (line.find("LIN_protocol") == string::npos) {
+				else if (line.find("LIN_protocol =") != string::npos) {
 					string key, value;
 					size_t pos = line.find('=');
 
@@ -372,10 +372,10 @@ int CLINProjectDlg::w_LDF_parse(string filePath) {
 					value.erase(remove(value.begin(), value.end(), '\"'), value.end());
 					value.erase(remove(value.begin(), value.end(), ';'), value.end());
 
-					attribute.linProtocol = stof(value);
+					attribute.linProtocol = value;
 
 				}
-				else if (line.find("configured_NAD") == string::npos) {
+				else if (line.find("configured_NAD =") != string::npos) {
 					string key, value;
 					size_t pos = line.find('=');
 
@@ -389,7 +389,7 @@ int CLINProjectDlg::w_LDF_parse(string filePath) {
 
 					attribute.configuredNAD = stof(value);
 				}
-				else if (line.find("initial_NAD") == string::npos) {
+				else if (line.find("initial_NAD =") != string::npos) {
 					string key, value;
 					size_t pos = line.find('=');
 
@@ -403,7 +403,7 @@ int CLINProjectDlg::w_LDF_parse(string filePath) {
 
 					attribute.initialNAD = stof(value);
 				}
-				else if (line.find("product_id") == string::npos) {
+				else if (line.find("product_id =") != string::npos) {
 					string key, value;
 					size_t pos = line.find('=');
 
@@ -423,7 +423,7 @@ int CLINProjectDlg::w_LDF_parse(string filePath) {
 					attribute.productID2 = stoi(parts[1], nullptr, 16);
 					attribute.productVersion = stoi(parts[2]);
 				}
-				else if (line.find("response_error") == string::npos) {
+				else if (line.find("response_error =") != string::npos) {
 					string key, value;
 					size_t pos = line.find('=');
 
@@ -437,7 +437,7 @@ int CLINProjectDlg::w_LDF_parse(string filePath) {
 
 					attribute.responseErr = value;
 				}
-				else if (line.find("P2_min") == string::npos) {
+				else if (line.find("P2_min =") != string::npos) {
 					string key, value;
 					size_t pos = line.find('=');
 
@@ -455,7 +455,7 @@ int CLINProjectDlg::w_LDF_parse(string filePath) {
 					}
 					attribute.P2_min = stof(value);
 				}
-				else if (line.find("ST_min") == string::npos) {
+				else if (line.find("ST_min =") != string::npos) {
 					string key, value;
 					size_t pos = line.find('=');
 
@@ -473,7 +473,7 @@ int CLINProjectDlg::w_LDF_parse(string filePath) {
 					}
 					attribute.ST_min = stof(value);
 				}
-				else if (line.find("N_As_timeout") == string::npos) {
+				else if (line.find("N_As_timeout =") != string::npos) {
 					string key, value;
 					size_t pos = line.find('=');
 
@@ -491,7 +491,7 @@ int CLINProjectDlg::w_LDF_parse(string filePath) {
 					}
 					attribute.N_As_timeout = stof(value);
 				}
-				else if (line.find("N_Cr_timeout") == string::npos) {
+				else if (line.find("N_Cr_timeout =") != string::npos) {
 					string key, value;
 					size_t pos = line.find('=');
 
@@ -509,7 +509,7 @@ int CLINProjectDlg::w_LDF_parse(string filePath) {
 					}
 					attribute.N_Cr_timeout = stof(value);
 				}
-				else if (line.find("configurable_frames {") == string::npos) {
+				else if (line.find("configurable_frames {") != string::npos) {
 					while (true) {
 						getline(file, line);
 						if (line.find("}") != string::npos) {
@@ -518,6 +518,7 @@ int CLINProjectDlg::w_LDF_parse(string filePath) {
 						stringstream ss(line);
 						string configurable_frame;
 						getline(ss, configurable_frame, ';');
+						configurable_frame.erase(remove(configurable_frame.begin(), configurable_frame.end(), ' '), configurable_frame.end());
 						attribute.configurable_frames.push_back(configurable_frame);
 					}
 				}
@@ -549,6 +550,13 @@ int CLINProjectDlg::w_LDF_parse(string filePath) {
 	//	CString test(w_Frames[i].name.c_str());
 	//	MessageBox(test);
 	//}
+
+	// Node_attributes test
+	//CString test(w_NodeAttributes[0].linProtocol.c_str());
+	//MessageBox(_T("linProtocol  : ") + test);
+	//CString test2(w_NodeAttributes[0].configurable_frames[0].c_str());
+	//CString test3(w_NodeAttributes[0].configurable_frames[1].c_str());
+	//MessageBox(_T("configurable_frames  : ") + test2 + ", " + test3);
 
 	file.close();
 
