@@ -186,15 +186,13 @@ public:
 	vector<BYTE> FrameIDs;
 	int schedulesSize = 0;
 
-	struct w_Schedules {
+	struct Schedules {
 		int schedulesPosition;
 		int size = 0;
 		TLINScheduleSlot Schedule[LIN_MAX_SCHEDULES] = {};
 	};
-	w_Schedules Schdules[LIN_MAX_SCHEDULES];
+	Schedules Schdules[LIN_MAX_SCHEDULES];
 
-	
-	int frameId;
 
 	TLINRcvMsg rcvMsg = {};
 	int delay = 200;
@@ -230,9 +228,8 @@ public:
 	CListCtrl mTraceList;
 	CListCtrl mSignalList;
 
+	CComboBox mFrameName;
 	CComboBox mFrameId;
 	CComboBox mSchedule;
-	afx_msg void OnCbnSelchangeSchedule();
-	CStatic mFrameName;
-	afx_msg void OnCbnSelchangeFrameid();
+	CComboBox mTrigger;
 };

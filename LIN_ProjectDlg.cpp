@@ -71,12 +71,13 @@ void CLINProjectDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_Tx6, mTx6);
 	DDX_Control(pDX, IDC_Tx7, mTx7);
 	DDX_Control(pDX, IDC_TraceList, mTraceList);
+	DDX_Control(pDX, IDC_FrameName, mFrameName);
 	DDX_Control(pDX, IDC_FrameId, mFrameId);
 	DDX_Control(pDX, IDC_Delay, mDelay);
+	DDX_Control(pDX, IDC_Trigger, mTrigger);
 	DDX_Control(pDX, IDC_LogFile, mFileName);
 	DDX_Control(pDX, IDC_SignalList, mSignalList);
 	DDX_Control(pDX, IDC_Schedule, mSchedule);
-	DDX_Control(pDX, IDC_FrameName, mFrameName);
 }
 
 BEGIN_MESSAGE_MAP(CLINProjectDlg, CDialogEx)
@@ -88,8 +89,6 @@ BEGIN_MESSAGE_MAP(CLINProjectDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_Stop, &CLINProjectDlg::OnBnClickedStop)
 	ON_BN_CLICKED(IDC_SEND, &CLINProjectDlg::OnBnClickedSend)
 	ON_BN_CLICKED(IDC_OpenLog, &CLINProjectDlg::OnBnClickedOpenlog)
-	ON_CBN_SELCHANGE(IDC_Schedule, &CLINProjectDlg::OnCbnSelchangeSchedule)
-	ON_CBN_SELCHANGE(IDC_FrameId, &CLINProjectDlg::OnCbnSelchangeFrameid)
 END_MESSAGE_MAP()
 
 
@@ -722,7 +721,7 @@ int CLINProjectDlg::w_LDF_parse(string filePath) {
 
 	// 스케줄
 	for (w_ScheduleTable scheduleTable : w_ScheduleTables) {
-		w_Schedules s;
+		Schedules s;
 		int i = 0;
 		s.schedulesPosition = schedulesSize;
 		for (w_Schedule schedule : scheduleTable.schedule) {
@@ -751,8 +750,8 @@ int CLINProjectDlg::w_LDF_parse(string filePath) {
 	}
 
 	CString FilePath(filePath.c_str());
-	mFileName.SetWindowTextW(FilePath);
 	MessageBox(FilePath);
+	mFileName.SetWindowTextW(FilePath);
 
 	file.close();
 
@@ -875,7 +874,7 @@ int CLINProjectDlg::wLIN_start() {
 	}
 	// 정지 상태가 아닐 때 (시작)
 	else {
-		result = LIN_StartSchedule(hClient, hHw, mSchedule.GetCurSel());
+		result = LIN_StartSchedule(hClient, hHw, 0);
 
 		mProgress.SetWindowTextW(_T("스케줄 시작"));
 		errCode.Format(_T("%d"), result);
@@ -992,7 +991,31 @@ void CLINProjectDlg::OnBnClickedStop()
 	wLIN_clear();
 	m_bThreadRunning = false;
 }
+void CLINProjectDlg::OnBnClickedSend()
+{
+	CString temp;
+	int high, low, i;
+	CEdit* mTx[8] = { &mTx0, &mTx1, &mTx2, &mTx3, &mTx4, &mTx5, &mTx6, &mTx7 };
 
+	for (i = 0; i < 8; i++) {
+		temp = "";
+		mTx[i] -> GetWindowTextW(temp);
+		if (temp.GetLength() >= 2) {
+			high = (temp[0] > '9') ? temp[0] - 'A' + 10 : temp[0] - '0';
+			low = (temp[1] > '9') ? temp[1] - 'A' + 10 : temp[1] - '0';
+
+			sendData[i] = (high << 4) | low;
+		}
+		else if (temp.GetLength() == 1){
+			high = 0;
+			low = (temp[0] > '9') ? temp[0] - 'A' + 10 : temp[0] - '0';
+
+			sendData[i] = (high << 4) | low;
+		}
+	}
+
+	LIN_UpdateByteArray(hClient, hHw, 0x18, 0, 8, &sendData[0]);
+}
 void CLINProjectDlg::OnBnClickedOpenlog()
 {
 	static TCHAR BASED_CODE szFilter[] = _T("데이터베이스 (*.ldf) | *.ldf;||");
@@ -1007,79 +1030,5 @@ void CLINProjectDlg::OnBnClickedOpenlog()
 
 		w_LDF_parse(temp); // LIN 설정 파일 파싱
 
-	}
-}
-void CLINProjectDlg::OnCbnSelchangeSchedule()
-{
-	int selNum = mSchedule.GetCurSel();
-	w_Schedules s = Schdules[selNum];
-
-	for (int i = 0; i < s.size; i++) {
-		CString frameId;
-		frameId.Format(_T("0x%X"), s.Schedule[i].FrameId[0]);
-		mFrameId.AddString(frameId);
-	}
-}
-
-void CLINProjectDlg::OnCbnSelchangeFrameid()
-{
-	int selNum = mFrameId.GetCurSel();
-	w_Frame f = w_Frames[selNum];
-
-	CString fName(f.name.c_str());
-	mFrameName.SetWindowTextW(fName);
-
-	/*CString temp;
-	temp.Format(_T("%X, %d"), f.id, selNum);
-	MessageBox(temp);*/
-}
-
-void CLINProjectDlg::OnBnClickedSend()
-{
-	int high, low, i;
-	CEdit* mTx[8] = { &mTx0, &mTx1, &mTx2, &mTx3, &mTx4, &mTx5, &mTx6, &mTx7 };
-	CString temp, delay;
-	bool TxIsEmpty = false;
-	for (i = 0; i < 8; i++) {
-		temp = "";
-		mTx[i]->GetWindowTextW(temp);
-		if (temp == _T("")) {
-			TxIsEmpty = true;
-			break;
-		}
-	}
-
-	mDelay.GetWindowTextW(delay);
-	if (mFrameId.GetCurSel() == -1) {
-		MessageBox(_T("Select Frame ID!"));
-	}
-	else if (delay == _T("")) {
-		MessageBox(_T("Edit Delay!"));
-	}
-	else if (TxIsEmpty) {
-		MessageBox(_T("Edit All Data!"));
-	}
-	else if (!m_bThreadRunning) {
-		MessageBox(_T("Start Schedule!"));
-	}
-	else {
-		for (i = 0; i < 8; i++) {
-			temp = "";
-			mTx[i]->GetWindowTextW(temp);
-			if (temp.GetLength() >= 2) {
-				high = (temp[0] > '9') ? temp[0] - 'A' + 10 : temp[0] - '0';
-				low = (temp[1] > '9') ? temp[1] - 'A' + 10 : temp[1] - '0';
-
-				sendData[i] = (high << 4) | low;
-			}
-			else if (temp.GetLength() == 1) {
-				high = 0;
-				low = (temp[0] > '9') ? temp[0] - 'A' + 10 : temp[0] - '0';
-
-				sendData[i] = (high << 4) | low;
-			}
-		}
-
-		LIN_UpdateByteArray(hClient, hHw, 0x18, 0, 8, &sendData[0]);
 	}
 }
