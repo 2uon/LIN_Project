@@ -77,6 +77,7 @@ void CLINProjectDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_Trigger, mTrigger);
 	DDX_Control(pDX, IDC_LogFile, mFileName);
 	DDX_Control(pDX, IDC_SignalList, mSignalList);
+	DDX_Control(pDX, IDC_Schedule, mSchedule);
 }
 
 BEGIN_MESSAGE_MAP(CLINProjectDlg, CDialogEx)
@@ -743,6 +744,9 @@ int CLINProjectDlg::w_LDF_parse(string filePath) {
 
 		Schdules[schedulesSize] = s;
 		schedulesSize++;
+		
+		CString temp(scheduleTable.name.c_str());
+		mSchedule.AddString(temp);
 	}
 
 	CString FilePath(filePath.c_str());

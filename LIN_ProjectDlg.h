@@ -213,6 +213,7 @@ public:
 	CStatic mProgress;
 	CStatic mErrCode;
 	CStatic mRx;
+
 	CEdit mTx0;
 	CEdit mTx1;
 	CEdit mTx2;
@@ -221,11 +222,14 @@ public:
 	CEdit mTx5;
 	CEdit mTx6;
 	CEdit mTx7;
+	CEdit mDelay;
+	CEdit mFileName;
+
 	CListCtrl mTraceList;
+	CListCtrl mSignalList;
+
 	CComboBox mFrameName;
 	CComboBox mFrameId;
-	CEdit mDelay;
+	CComboBox mSchedule;
 	CComboBox mTrigger;
-	CEdit mFileName;
-	CListCtrl mSignalList;
 };

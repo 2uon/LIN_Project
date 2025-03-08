@@ -77,6 +77,7 @@ void CLINProjectDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_Trigger, mTrigger);
 	DDX_Control(pDX, IDC_LogFile, mFileName);
 	DDX_Control(pDX, IDC_SignalList, mSignalList);
+	DDX_Control(pDX, IDC_Schedule, mSchedule);
 }
 
 BEGIN_MESSAGE_MAP(CLINProjectDlg, CDialogEx)
@@ -733,16 +734,20 @@ int CLINProjectDlg::w_LDF_parse(string filePath) {
 			i++;
 		}
 		s.size = i;
-		
 
-		result = LIN_SetSchedule(hClient, hHw, schedulesSize, s.Schedule, s.size);
+		for (int j = 0; j < s.size; j++) {
+			result = LIN_SetSchedule(hClient, hHw, j, s.Schedule, s.size);
 
-		mProgress.SetWindowTextW(_T("스케줄 설정"));
-		errCode.Format(_T("%d"), result);
-		mErrCode.SetWindowTextW(errCode);
+			mProgress.SetWindowTextW(_T("스케줄 설정"));
+			errCode.Format(_T("%d"), result);
+			mErrCode.SetWindowTextW(errCode);
+		}
 
 		Schdules[schedulesSize] = s;
 		schedulesSize++;
+		
+		CString temp(scheduleTable.name.c_str());
+		mSchedule.AddString(temp);
 	}
 
 	CString FilePath(filePath.c_str());
@@ -852,12 +857,6 @@ void CLINProjectDlg::w_Parser_DiagnosticSignals(string& line) {
 	sig.value = stoi(value);
 
 	w_DiagnosticSignals.push_back(sig);
-}
-
-// LIN 연결 및 세팅
-int CLINProjectDlg::wLIN_connect() {
-
-	return 0;
 }
 
 // LIN 스케줄 시작
@@ -978,7 +977,6 @@ void CLINProjectDlg::wReadData() {
 void CLINProjectDlg::OnBnClickedStart()
 {
 	if (!m_bThreadRunning) {
-		wLIN_connect();
 		wLIN_start();
 	}
 }

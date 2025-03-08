@@ -34,9 +34,10 @@
 #define IDC_LogFile                     1021
 #define IDC_OpenLog                     1022
 #define IDC_Signal                      1023
+#define IDC_FrameName2                  1024
+#define IDC_Schedule                    1024
 #define IDC_TraceList                   1032
 #define IDC_SignalList                  1033
-#define IDC_LIST2                       1034
 
 // Next default values for new objects
 // 
