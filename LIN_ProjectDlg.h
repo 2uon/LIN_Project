@@ -38,9 +38,6 @@ public:
 	void w_Parser_Signals(string& line);
 	void w_Parser_DiagnosticSignals(string& line);
 
-	void w_Parser_ScheduleTables(string& line);
-	void w_Parser_SignalEncodingTypes(string& line);
-	void w_Parser_SignalRepresentation(string& line);
 
 // 구현입니다.
 protected:
@@ -60,7 +57,6 @@ public:
 	afx_msg void OnBnClickedSend();
 
 	afx_msg void OnBnClickedOpenlog();
-	afx_msg void OnBnClickedSignal();
 
 	// 스레드
 	CWinThread* m_pThread;
@@ -138,6 +134,17 @@ public:
 	};
 	vector<w_NodeAttribute> w_NodeAttributes;
 
+	// Schedule_tables
+	struct w_Schedule {
+		string name;
+		int delay;
+	};
+	struct w_ScheduleTable {
+		string name;
+		vector<w_Schedule> schedule;
+	};
+	vector<w_ScheduleTable> w_ScheduleTables;
+
 	// Signal_encoding_types 
 	struct w_LogicalValue {
 		int value;
@@ -151,8 +158,8 @@ public:
 		string unit;	    // 단위 (예: "STEP", "HW_VER" ...)
 	};
 	struct w_SignalEncoding {
-		std::string name;  // 신호 이름 (예: "C_3way1_LinError")
-		std::vector<w_LogicalValue> logicalValues; // 논리 값 리스트
+		string name;  // 신호 이름 (예: "C_3way1_LinError")
+		vector<w_LogicalValue> logicalValues; // 논리 값 리스트
 		w_PhysicalValue physicalValue; // 물리 값 (존재하지 않을 경우 기본값)
 		bool isPhysical;   // 물리 값인지 여부 (true: physical, false: logical)
 	};

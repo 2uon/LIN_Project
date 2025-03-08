@@ -88,7 +88,6 @@ BEGIN_MESSAGE_MAP(CLINProjectDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_Stop, &CLINProjectDlg::OnBnClickedStop)
 	ON_BN_CLICKED(IDC_SEND, &CLINProjectDlg::OnBnClickedSend)
 	ON_BN_CLICKED(IDC_OpenLog, &CLINProjectDlg::OnBnClickedOpenlog)
-	ON_BN_CLICKED(IDC_Signal, &CLINProjectDlg::OnBnClickedSignal)
 END_MESSAGE_MAP()
 
 
@@ -236,12 +235,9 @@ int CLINProjectDlg::w_LDF_parse(string filePath) {
 		else if (line.find("Signal_encoding_types {") != string::npos) {
 			section = "Signal_encoding_types";
 		}
-		else if (line.find("Signal_representation {") != string::npos) {
-			section = "Signal_representation";
-		}
-		else if (line.find("Signal_representation {") != string::npos) {
-			section = "Signal_representation";
-		}
+		//else if (line.find("Signal_representation {") != string::npos) {
+		//	section = "Signal_representation";
+		//}
 
 		// Config
 		else if (line.find("LIN_protocol_version = ") != string::npos) {
@@ -525,14 +521,106 @@ int CLINProjectDlg::w_LDF_parse(string filePath) {
 			}
 		}
 		else if (section == "Schedule_tables") { /////////////////////////////////
-			w_Parser_ScheduleTables(line);
+			stringstream ss(line);
+			string name;
+			getline(ss, name, '{');
+			w_ScheduleTable table;
+			name.erase(remove(name.begin(), name.end(), ' '), name.end());
+			table.name = name;
+
+			// 데이터 추출
+			string data;
+			getline(ss, data, '{');
+			stringstream dataStream(data);
+			string value;
+
+			// 테스트
+			//CString test(table.name.c_str());
+			//MessageBox(_T("schedule table:") + test);
+
+			while (true) {
+				getline(file, line);
+				if (line.find("}") != string::npos) {
+					w_ScheduleTables.push_back(table);
+					break;
+				}
+				w_Schedule schedule;
+				string temp;
+
+				istringstream stream(line);
+				stream >> schedule.name >> temp >> schedule.delay;
+
+				table.schedule.push_back(schedule);
+
+				// 테스트
+				//CString test1(schedule.name.c_str());
+				//CString test2;
+				//test2.Format(_T("%d"), schedule.delay);
+				//MessageBox(_T("schedule :") + test1 + "/" + test2);
+			}
 		}
 		else if (section == "Signal_encoding_types") {
-			w_Parser_SignalEncodingTypes(line);
+			stringstream ss(line);
+			w_SignalEncoding encodeing;
+			string name;
+			getline(ss, name, '{');
+			name.erase(remove(name.begin(), name.end(), ' '), name.end());
+			encodeing.name = name;
+
+			while (true) {
+				getline(file, line);
+				if (line.find("}") != string::npos) {
+					w_SignalEncodings.push_back(encodeing);
+					break;
+				}
+				// 데이터 추출
+				stringstream lineStream(line);
+				string data;
+				getline(lineStream, data, ';');
+
+				string value;
+				stringstream dataStream(data);
+
+				getline(dataStream, value, ',');
+				value.erase(remove(value.begin(), value.end(), ' '), value.end());
+
+				if (value == "logical_value") {
+					encodeing.isPhysical = false;
+					w_LogicalValue l_value;
+
+					getline(dataStream, value, ',');
+					l_value.value = stoi(value);
+					getline(dataStream, value, ',');
+					value.erase(remove(value.begin(), value.end(), '"'), value.end());
+					l_value.description = value;
+
+					encodeing.logicalValues.push_back(l_value);
+				}
+				else {
+					encodeing.isPhysical = true;
+					w_PhysicalValue p_value;
+
+					getline(dataStream, value, ',');
+					p_value.minValue = stoi(value);
+					getline(dataStream, value, ',');
+					p_value.maxValue = stoi(value);
+					getline(dataStream, value, ',');
+					p_value.scale = stoi(value);
+					getline(dataStream, value, ',');
+					p_value.offset = stoi(value);
+
+					// 테스트
+					CString test1;
+					test1.Format(_T("%d"), p_value.offset);
+					MessageBox(_T("w_PhysicalValue :") + test1 + "/");
+					
+					encodeing.physicalValue = p_value;
+				}
+			}
 		}
-		else if (section == "Signal_representation") {
-			w_Parser_SignalRepresentation(line);
-		}
+		//else if (section == "Signal_representation") {
+		//	w_Parser_SignalRepresentation(line);
+		//}
 	}
 
 	// Nodes test
@@ -557,6 +645,12 @@ int CLINProjectDlg::w_LDF_parse(string filePath) {
 	//CString test2(w_NodeAttributes[0].configurable_frames[0].c_str());
 	//CString test3(w_NodeAttributes[0].configurable_frames[1].c_str());
 	//MessageBox(_T("configurable_frames  : ") + test2 + ", " + test3);
+
+	// Schedule_tables test
+	//for (int i = 0; i < 8; i++) {
+	//	CString test(w_ScheduleTables[0].schedule[i].name.c_str());
+	//	MessageBox(test);
+	//}
 
 	file.close();
 
@@ -597,7 +691,6 @@ void CLINProjectDlg::w_Parser_Config(string& line) {
 		w_LIN_speed = stof(value);
 	}
 }
-
 void CLINProjectDlg::w_Parser_Nodes(string& line) {
 	stringstream ss(line);
 	string key, temp;
@@ -612,7 +705,6 @@ void CLINProjectDlg::w_Parser_Nodes(string& line) {
 		}
 	}
 }
-
 void CLINProjectDlg::w_Parser_Signals(string& line) {
 	stringstream ss(line);
 	w_Signal sig;
@@ -646,7 +738,6 @@ void CLINProjectDlg::w_Parser_Signals(string& line) {
 	//CString test2(sig.rxNode.c_str());
 	//MessageBox(_T("rx") + test2);
 }
-
 void CLINProjectDlg::w_Parser_DiagnosticSignals(string& line) {
 	stringstream ss(line);
 	w_DiagnosticSignal sig;
@@ -665,20 +756,6 @@ void CLINProjectDlg::w_Parser_DiagnosticSignals(string& line) {
 
 	w_DiagnosticSignals.push_back(sig);
 }
-
-
-void CLINProjectDlg::w_Parser_ScheduleTables(string& line) {
-
-}
-
-void CLINProjectDlg::w_Parser_SignalEncodingTypes(string& line) {
-
-}
-
-void CLINProjectDlg::w_Parser_SignalRepresentation(string& line) {
-
-}
-
 
 // LIN 연결 및 세팅
 int CLINProjectDlg::wLIN_connect() {
@@ -951,9 +1028,4 @@ void CLINProjectDlg::OnBnClickedOpenlog()
 		w_LDF_parse(temp); // LIN 설정 파일 파싱
 
 	}
-}
-
-void CLINProjectDlg::OnBnClickedSignal()
-{
-	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
 }
