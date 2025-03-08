@@ -128,11 +128,11 @@ BOOL CLINProjectDlg::OnInitDialog()
 	// List 초기화
 	CRect rtTrace;
 	mTraceList.GetWindowRect(&rtTrace);
-	mTraceList.SetExtendedStyle(LVS_EX_GRIDLINES | LVS_EX_FULLROWSELECT);
+	mTraceList.SetExtendedStyle(LVS_EX_GRIDLINES | LVS_EX_FULLROWSELECT | LVS_EX_DOUBLEBUFFER);
 
-	mTraceList.InsertColumn(0, TEXT("Frame ID"), LVCFMT_LEFT, rtTrace.Width() * 0.2);
-	mTraceList.InsertColumn(1, TEXT("Frame Data"), LVCFMT_LEFT, rtTrace.Width() * 0.6);
-	mTraceList.InsertColumn(2, TEXT("Error Flags"), LVCFMT_LEFT, rtTrace.Width() * 0.2);
+	mTraceList.InsertColumn(0, TEXT("Frame ID"), LVCFMT_LEFT, rtTrace.Width() * 0.25);
+	mTraceList.InsertColumn(1, TEXT("Frame Data"), LVCFMT_LEFT, rtTrace.Width() * 0.5);
+	mTraceList.InsertColumn(2, TEXT("Error Flags"), LVCFMT_LEFT, rtTrace.Width() * 0.25);
 
 	CRect rtSignal;
 	mSignalList.GetWindowRect(&rtSignal);
@@ -284,6 +284,7 @@ int CLINProjectDlg::w_LDF_parse(string filePath) {
 			getline(dataStream, value, ',');
 			frame.id = stoi(value);
 			getline(dataStream, value, ',');
+			value.erase(remove(value.begin(), value.end(), ' '), value.end());
 			frame.txNode = value;
 			getline(dataStream, value, ',');
 			frame.length = stoi(value);
@@ -338,7 +339,9 @@ int CLINProjectDlg::w_LDF_parse(string filePath) {
 
 				stringstream dataStream(data);
 				string value;
-				getline(dataStream, dataStruct.name, ',');
+				getline(dataStream, value, ',');
+				value.erase(remove(value.begin(), value.end(), ' '), value.end());
+				dataStruct.name = value;
 				getline(dataStream, value, ',');
 				dataStruct.start = stoi(value);
 				frame.w_Data.push_back(dataStruct);
@@ -703,7 +706,11 @@ int CLINProjectDlg::w_LDF_parse(string filePath) {
 		f.ChecksumType = cstEnhanced;
 		f.Length = frame.length;
 
+		/*CString temp(frame.txNode.c_str());
+		MessageBox(_T("/") + temp + "/");*/
+
 		if (frame.txNode == w_Client_name) {
+
 			f.Flags = FRAME_FLAG_RESPONSE_ENABLE;
 			f.Direction = dirPublisher;
 			memset(f.InitialData, 0, sizeof(data));
@@ -794,18 +801,35 @@ void CLINProjectDlg::w_Parser_Config(string& line) {
 	}
 }
 void CLINProjectDlg::w_Parser_Nodes(string& line) {
+	line.erase(remove(line.begin(), line.end(), ';'), line.end());
 	stringstream ss(line);
-	string key, temp;
-	ss >> key;
-	if (key == "Master:") {
-		ss >> w_Client_name >> w_delay >> temp >> w_IFS;
+	string value;
+
+	getline(ss, value, ':');
+	value.erase(remove(value.begin(), value.end(), ' '), value.end());
+
+	if (value == "Master") {
+		getline(ss, value, ',');
+		value.erase(remove(value.begin(), value.end(), ' '), value.end());
+		
+		w_Client_name = value;
+
+		getline(ss, value, ',');
+		value.erase(remove(value.begin(), value.end(), ' '), value.end());
+		value.erase(remove(value.begin(), value.end(), 'ms'), value.end());
+		w_delay = stoi(value);
+		getline(ss, value, ',');
+		value.erase(remove(value.begin(), value.end(), ' '), value.end());
+		value.erase(remove(value.begin(), value.end(), 'ms'), value.end());
+		w_IFS = stoi(value);
 	}
-	else if (key == "Slaves:") {
-		while (getline(ss, temp, ',')) {
-			temp.erase(remove(temp.begin(), temp.end(), ';'), temp.end());
-			w_Slave_names[slave_cnt++] = temp;
+	else if (value == "Slaves:") {
+		while (getline(ss, value, ',')) {
+			value.erase(remove(value.begin(), value.end(), ' '), value.end());
+			w_Slave_names[slave_cnt++] = value;
 		}
 	}
+
 }
 void CLINProjectDlg::w_Parser_Signals(string& line) {
 	stringstream ss(line);
@@ -893,6 +917,7 @@ int CLINProjectDlg::wLIN_start() {
 
 // 정지
 int CLINProjectDlg::wLIN_pause() {
+	m_bThreadRunning = false;
 	// 스케줄 정지
 	result = LIN_SuspendSchedule(hClient, hHw);
 	mProgress.SetWindowTextW(_T("스케줄 정지"));
@@ -905,6 +930,7 @@ int CLINProjectDlg::wLIN_pause() {
 
 // 초기화
 int CLINProjectDlg::wLIN_clear() {
+	m_bThreadRunning = false;
 	// 스케줄 삭제, 하드웨어 연결 해제
 	result = LIN_DeleteSchedule(hClient, hHw, schedule_position);
 	result = LIN_DisconnectClient(hClient, hHw);
@@ -964,10 +990,20 @@ void CLINProjectDlg::wReadData() {
 			mProgress.SetWindowTextW(_T("데이터 읽기"));
 			errCode.Format(_T("%d"), result);
 			mErrCode.SetWindowTextW(errCode);
-			/*rx.Format(_T("%02X %02X %02X %02X %02X %02X %02X %02X"), rcvMsg.Data[0], rcvMsg.Data[1], rcvMsg.Data[2], rcvMsg.Data[3]
-				, rcvMsg.Data[4], rcvMsg.Data[5], rcvMsg.Data[6], rcvMsg.Data[7]);
-			mRx.SetWindowTextW(rx);*/
+			
+			int nItemNum = find(FrameIDs.begin(), FrameIDs.end(), (rcvMsg.FrameId & 0x3F)) - FrameIDs.begin();
+			CString frameID;
+			CString data;
+			CString flag;
 
+			frameID.Format(_T("0x%X"), (rcvMsg.FrameId & 0x3F));
+			data.Format(_T("%X %X %X %X %X %X %X %X"), rcvMsg.Data[0], rcvMsg.Data[1], rcvMsg.Data[2], rcvMsg.Data[3],
+				rcvMsg.Data[4], rcvMsg.Data[5], rcvMsg.Data[6], rcvMsg.Data[7]);
+			flag.Format(_T("%X"), rcvMsg.ErrorFlags);
+
+			mTraceList.SetItemText(nItemNum, 0, frameID);
+			mTraceList.SetItemText(nItemNum, 1, data);
+			mTraceList.SetItemText(nItemNum, 2, flag);
 		}
 		Sleep(delay);
 	}
@@ -976,7 +1012,10 @@ void CLINProjectDlg::wReadData() {
 
 void CLINProjectDlg::OnBnClickedStart()
 {
-	if (!m_bThreadRunning) {
+	if (mSchedule.GetCurSel() == -1) {
+		MessageBox(_T("Select Schedule!"));
+	}
+	else if (!m_bThreadRunning) {
 		wLIN_start();
 	}
 }
@@ -984,13 +1023,11 @@ void CLINProjectDlg::OnBnClickedStart()
 void CLINProjectDlg::OnBnClickedPause()
 {
 	wLIN_pause();
-	m_bThreadRunning = false;
 }
 
 void CLINProjectDlg::OnBnClickedStop()
 {
 	wLIN_clear();
-	m_bThreadRunning = false;
 }
 
 void CLINProjectDlg::OnBnClickedOpenlog()
@@ -1015,9 +1052,10 @@ void CLINProjectDlg::OnCbnSelchangeSchedule()
 	w_Schedules s = Schdules[selNum];
 
 	for (int i = 0; i < s.size; i++) {
-		CString frameId;
-		frameId.Format(_T("0x%X"), s.Schedule[i].FrameId[0]);
-		mFrameId.AddString(frameId);
+		CString frameID;
+		frameID.Format(_T("0x%X"), s.Schedule[i].FrameId[0]);
+		mFrameId.AddString(frameID);
+		mTraceList.InsertItem(i, frameID);
 	}
 }
 
@@ -1029,6 +1067,7 @@ void CLINProjectDlg::OnCbnSelchangeFrameid()
 	CString fName(f.name.c_str());
 	mFrameName.SetWindowTextW(fName);
 
+	frameId = f.id;
 	/*CString temp;
 	temp.Format(_T("%X, %d"), f.id, selNum);
 	MessageBox(temp);*/

@@ -211,6 +211,7 @@
     <None Include="res\LINProject.rc2" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="res\icon1.ico" />
     <Image Include="res\LIN_Project.ico" />
   </ItemGroup>
   <ItemGroup>
