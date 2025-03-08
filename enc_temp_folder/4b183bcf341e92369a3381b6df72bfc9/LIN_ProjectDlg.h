@@ -24,6 +24,7 @@ public:
 	protected:
 	virtual void DoDataExchange(CDataExchange* pDX);	// DDX/DDV 지원입니다.
 
+	int wLIN_connect();
 	int wLIN_start();
 	int wLIN_pause();
 	int wLIN_clear();

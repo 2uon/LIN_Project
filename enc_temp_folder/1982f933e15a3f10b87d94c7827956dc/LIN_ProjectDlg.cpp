@@ -854,6 +854,12 @@ void CLINProjectDlg::w_Parser_DiagnosticSignals(string& line) {
 	w_DiagnosticSignals.push_back(sig);
 }
 
+// LIN 연결 및 세팅
+int CLINProjectDlg::wLIN_connect() {
+
+	return 0;
+}
+
 // LIN 스케줄 시작
 int CLINProjectDlg::wLIN_start() {
 	// 버스 깨우기
@@ -972,6 +978,7 @@ void CLINProjectDlg::wReadData() {
 void CLINProjectDlg::OnBnClickedStart()
 {
 	if (!m_bThreadRunning) {
+		wLIN_connect();
 		wLIN_start();
 	}
 }
