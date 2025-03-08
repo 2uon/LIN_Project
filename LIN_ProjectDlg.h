@@ -230,6 +230,8 @@ public:
 	CListCtrl mTraceList;
 	CListCtrl mSignalList;
 
+	CButton mCheckSig;
+
 	CComboBox mFrameId;
 	CComboBox mSchedule;
 	afx_msg void OnCbnSelchangeSchedule();

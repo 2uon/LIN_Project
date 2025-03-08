@@ -8,6 +8,7 @@
 #include "afxdialogex.h"
 #include <fstream>
 #include <sstream>
+#include <d2d1.h>
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -136,11 +137,9 @@ BOOL CLINProjectDlg::OnInitDialog()
 
 	CRect rtSignal;
 	mSignalList.GetWindowRect(&rtSignal);
-	mSignalList.SetExtendedStyle(LVS_EX_GRIDLINES | LVS_EX_FULLROWSELECT);
+	mSignalList.SetExtendedStyle(LVS_EX_CHECKBOXES | LVS_EX_GRIDLINES | LVS_EX_FULLROWSELECT);
 
-	mSignalList.InsertColumn(0, TEXT(""), LVCFMT_LEFT, rtSignal.Width() * 0.15);
-	mSignalList.InsertColumn(1, TEXT(""), LVCFMT_LEFT, rtSignal.Width() * 0.15);
-	mSignalList.InsertColumn(2, TEXT("Name"), LVCFMT_LEFT, rtSignal.Width() * 0.7);
+	mSignalList.InsertColumn(0, TEXT("Name"), LVCFMT_LEFT, rtSignal.Width());
 
 
 	return TRUE;  // 포커스를 컨트롤에 설정하지 않으면 TRUE를 반환합니다.
@@ -201,6 +200,28 @@ CLINProjectDlg::~CLINProjectDlg() {
 
 
 int CLINProjectDlg::w_LDF_parse(string filePath) {
+	// 초기화
+	w_Signals = {};
+	w_DiagnosticSignals = {};
+	w_Frames = {};
+	w_DiagnosticFrames = {};
+	w_NodeAttributes = {};
+	w_ScheduleTables = {};
+	w_SignalEncodings = {};
+	Frames = {};
+	FrameNames = {};
+	FrameIDs = {};
+	schedulesSize = 0;
+	schedule_position = 0;
+	
+	// 위젯 초기화
+	mSchedule.ResetContent();
+	mFrameId.ResetContent();
+	mFileName.SetWindowTextW(_T("- Frame Name -"));
+	mTraceList.DeleteAllItems();
+	mSignalList.DeleteAllItems();
+
+
 	ifstream file(filePath);
 	if (!file.is_open()) {
 		return -1;
@@ -755,6 +776,13 @@ int CLINProjectDlg::w_LDF_parse(string filePath) {
 		
 		CString temp(scheduleTable.name.c_str());
 		mSchedule.AddString(temp);
+	}
+	
+	// 신호
+	int sigItem = 0;
+	for (w_Signal signal : w_Signals) {
+		CString temp(signal.name.c_str());
+		mSignalList.InsertItem(sigItem++, temp);
 	}
 
 	CString FilePath(filePath.c_str());

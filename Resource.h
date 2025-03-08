@@ -36,6 +36,7 @@
 #define IDC_TraceList                   1032
 #define IDC_SignalList                  1033
 #define IDC_FrameName                   1035
+#define IDC_CHECK1                      1036
 
 // Next default values for new objects
 // 
@@ -43,7 +44,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        131
 #define _APS_NEXT_COMMAND_VALUE         32771
-#define _APS_NEXT_CONTROL_VALUE         1036
+#define _APS_NEXT_CONTROL_VALUE         1037
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
