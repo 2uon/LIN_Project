@@ -78,15 +78,15 @@ void CLINProjectDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_SignalList, mSignalList);
 	DDX_Control(pDX, IDC_Schedule, mSchedule);
 	DDX_Control(pDX, IDC_FrameName, mFrameName);
-	DDX_Control(pDX, IDC_Graph1, mGraph1);
-	DDX_Control(pDX, IDC_Graph2, mGraph2);
-	DDX_Control(pDX, IDC_Graph3, mGraph3);
-	DDX_Control(pDX, IDC_Graph4, mGraph4);
-	DDX_Control(pDX, IDC_Graph5, mGraph5);
-	DDX_Control(pDX, IDC_Graph6, mGraph6);
-	DDX_Control(pDX, IDC_Graph7, mGraph7);
-	DDX_Control(pDX, IDC_Graph8, mGraph8);
-	DDX_Control(pDX, IDC_Graph9, mGraph9);
+	DDX_Control(pDX, IDC_Graph1, mGraph[0]);
+	DDX_Control(pDX, IDC_Graph2, mGraph[1]);
+	DDX_Control(pDX, IDC_Graph3, mGraph[2]);
+	DDX_Control(pDX, IDC_Graph4, mGraph[3]);
+	DDX_Control(pDX, IDC_Graph5, mGraph[4]);
+	DDX_Control(pDX, IDC_Graph6, mGraph[5]);
+	DDX_Control(pDX, IDC_Graph7, mGraph[6]);
+	DDX_Control(pDX, IDC_Graph8, mGraph[7]);
+	DDX_Control(pDX, IDC_Graph9, mGraph[8]);
 }
 
 BEGIN_MESSAGE_MAP(CLINProjectDlg, CDialogEx)
@@ -152,6 +152,11 @@ BOOL CLINProjectDlg::OnInitDialog()
 
 	mSignalList.InsertColumn(0, TEXT("Signal Name"), LVCFMT_LEFT, rtSignal.Width());
 
+	// 그래프 초기화
+	for (int i = 0; i < 9; i++) {
+		initGraph(i);
+	}
+
 	return TRUE;  // 포커스를 컨트롤에 설정하지 않으면 TRUE를 반환합니다.
 }
 
@@ -204,12 +209,13 @@ HCURSOR CLINProjectDlg::OnQueryDragIcon()
 	return static_cast<HCURSOR>(m_hIcon);
 }
 
-CLINProjectDlg::~CLINProjectDlg() {
-	wLIN_clear();
-}
 
 
 int CLINProjectDlg::w_LDF_parse(string filePath) {
+	// 그래프 초기화
+	for (int i = 0; i < 9; i++) {
+		initGraph(i);
+	}
 	// 초기화
 	w_Signals = {};
 	w_DiagnosticSignals = {};
@@ -1181,4 +1187,32 @@ void CLINProjectDlg::OnLvnItemchangedSignallist(NMHDR* pNMHDR, LRESULT* pResult)
 		}
 	}
 	*pResult = 0;
+}
+
+void CLINProjectDlg::initGraph(int index) {
+	CChartStandardAxis* pBottomAxis =
+		mGraph[index].CreateStandardAxis(CChartCtrl::BottomAxis);
+	CChartStandardAxis* pLeftAxis =
+		mGraph[index].CreateStandardAxis(CChartCtrl::LeftAxis);
+	pLeftAxis->SetAutomaticMode(CChartAxis::FullAutomatic);
+	pBottomAxis->SetAutomaticMode(CChartAxis::FullAutomatic);
+
+	pBottomAxis->SetDiscrete(false);
+	mGraph[index].ShowMouseCursor(false);
+	CChartCrossHairCursor* pCrossHair = mGraph[index].CreateCrossHairCursor();
+
+	/// 라인차트 파트
+	CChartXYSerie* pSeries = nullptr;
+	pSeries = mGraph[index].CreateLineSerie();
+
+	pBottomAxis->SetMinMax(0, 100);
+
+	/*double XVal[50];
+	double YVal[50];
+	for(int i = 0; i < 50; i++) {
+		XVal[i] = i * 16;
+		YVal[i] = sin(i) * 5000 + 47000;
+	}
+	pSeries->SetPoints(XVal, YVal, 50);
+	pSeries->SetColor(RGB(255, 0, 0));*/
 }

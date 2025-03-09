@@ -3,6 +3,8 @@
 //
 #include "StdClass.h"
 #include "LIN_Project.h"
+#include "ChartApi/ChartCtrl.h"
+#include "ChartApi/ChartLineSerie.h"
 #include <thread>
 
 #pragma once
@@ -14,7 +16,6 @@ class CLINProjectDlg : public CDialogEx
 // 생성입니다.
 public:
 	CLINProjectDlg(CWnd* pParent = nullptr);	// 표준 생성자입니다.
-	~CLINProjectDlg();
 
 // 대화 상자 데이터입니다.
 #ifdef AFX_DESIGN_TIME
@@ -37,6 +38,9 @@ public:
 	void w_Parser_Signals(string& line);
 	void w_Parser_DiagnosticSignals(string& line);
 
+	// 그래프 함수
+	void initGraph(int index);
+
 
 // 구현입니다.
 protected:
@@ -54,8 +58,12 @@ public:
 	afx_msg void OnBnClickedPause();
 	afx_msg void OnBnClickedStart();
 	afx_msg void OnBnClickedSend();
-
 	afx_msg void OnBnClickedOpenlog();
+
+	afx_msg void OnCbnSelchangeSchedule();
+	afx_msg void OnCbnSelchangeFrameid();
+
+	afx_msg void OnLvnItemchangedSignallist(NMHDR* pNMHDR, LRESULT* pResult);
 
 
 	// 스레드
@@ -211,6 +219,7 @@ public:
 
 	vector<int> graphSig = {};
 
+	// UI 접근
 	CString progress;
 	CString errCode;
 	CString tx;
@@ -237,17 +246,16 @@ public:
 
 	CComboBox mFrameId;
 	CComboBox mSchedule;
-	afx_msg void OnCbnSelchangeSchedule();
+
 	CStatic mFrameName;
-	afx_msg void OnCbnSelchangeFrameid();
-	afx_msg void OnLvnItemchangedSignallist(NMHDR* pNMHDR, LRESULT* pResult);
-	CStatic mGraph1;
-	CStatic mGraph2;
-	CStatic mGraph3;
-	CStatic mGraph4;
-	CStatic mGraph5;
-	CStatic mGraph6;
-	CStatic mGraph7;
-	CStatic mGraph8;
-	CStatic mGraph9;
+	
+
+	// 그래프
+	CChartCtrl mGraph[9];
+	CChartLineSerie* pGraph[9];
+	int GRAPHS[9] = {
+		IDC_Graph1, IDC_Graph2, IDC_Graph3,
+		IDC_Graph4, IDC_Graph5, IDC_Graph6,
+		IDC_Graph7, IDC_Graph8, IDC_Graph9
+	};
 };

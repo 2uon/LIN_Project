@@ -39,6 +39,16 @@
 #define IDC_CHECK1                      1036
 #define IDC_LIST2                       1039
 #define IDC_Graphs                      1039
+#define IDC_Graph1                      1049
+#define IDC_Graph2                      1050
+#define IDC_Graph3                      1051
+#define IDC_Graph4                      1052
+#define IDC_Graph5                      1065
+#define IDC_Graph6                      1066
+#define IDC_Graph7                      1067
+#define IDC_Graph8                      1068
+#define IDC_CUSTOM9                     1069
+#define IDC_Graph9                      1069
 
 // Next default values for new objects
 // 
@@ -46,7 +56,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        131
 #define _APS_NEXT_COMMAND_VALUE         32771
-#define _APS_NEXT_CONTROL_VALUE         1040
+#define _APS_NEXT_CONTROL_VALUE         1050
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

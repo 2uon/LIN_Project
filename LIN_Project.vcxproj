@@ -183,6 +183,37 @@
     </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="ChartApi\ChartAxis.h" />
+    <ClInclude Include="ChartApi\ChartAxisLabel.h" />
+    <ClInclude Include="ChartApi\ChartBalloonLabel.h" />
+    <ClInclude Include="ChartApi\ChartBarSerie.h" />
+    <ClInclude Include="ChartApi\ChartCandlestickSerie.h" />
+    <ClInclude Include="ChartApi\ChartCrossHairCursor.h" />
+    <ClInclude Include="ChartApi\ChartCtrl.h" />
+    <ClInclude Include="ChartApi\ChartCursor.h" />
+    <ClInclude Include="ChartApi\ChartDateTimeAxis.h" />
+    <ClInclude Include="ChartApi\ChartDragLineCursor.h" />
+    <ClInclude Include="ChartApi\ChartFont.h" />
+    <ClInclude Include="ChartApi\ChartGanttSerie.h" />
+    <ClInclude Include="ChartApi\ChartGradient.h" />
+    <ClInclude Include="ChartApi\ChartGrid.h" />
+    <ClInclude Include="ChartApi\ChartLabel.h" />
+    <ClInclude Include="ChartApi\ChartLegend.h" />
+    <ClInclude Include="ChartApi\ChartLineSerie.h" />
+    <ClInclude Include="ChartApi\ChartLogarithmicAxis.h" />
+    <ClInclude Include="ChartApi\ChartMouseListener.h" />
+    <ClInclude Include="ChartApi\ChartPointsArray.h" />
+    <ClInclude Include="ChartApi\ChartPointsSerie.h" />
+    <ClInclude Include="ChartApi\ChartScrollBar.h" />
+    <ClInclude Include="ChartApi\ChartSerie.h" />
+    <ClInclude Include="ChartApi\ChartSerieBase.h" />
+    <ClInclude Include="ChartApi\ChartSeriesMouseListener.h" />
+    <ClInclude Include="ChartApi\ChartStandardAxis.h" />
+    <ClInclude Include="ChartApi\ChartString.h" />
+    <ClInclude Include="ChartApi\ChartSurfaceSerie.h" />
+    <ClInclude Include="ChartApi\ChartTitle.h" />
+    <ClInclude Include="ChartApi\ChartXYSerie.h" />
+    <ClInclude Include="ChartApi\PointsOrdering.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="LIN_Project.h" />
     <ClInclude Include="LIN_ProjectDlg.h" />
@@ -193,6 +224,29 @@
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="ChartApi\ChartAxis.cpp" />
+    <ClCompile Include="ChartApi\ChartAxisLabel.cpp" />
+    <ClCompile Include="ChartApi\ChartBarSerie.cpp" />
+    <ClCompile Include="ChartApi\ChartCandlestickSerie.cpp" />
+    <ClCompile Include="ChartApi\ChartCrossHairCursor.cpp" />
+    <ClCompile Include="ChartApi\ChartCtrl.cpp" />
+    <ClCompile Include="ChartApi\ChartCursor.cpp" />
+    <ClCompile Include="ChartApi\ChartDateTimeAxis.cpp" />
+    <ClCompile Include="ChartApi\ChartDragLineCursor.cpp" />
+    <ClCompile Include="ChartApi\ChartFont.cpp" />
+    <ClCompile Include="ChartApi\ChartGanttSerie.cpp" />
+    <ClCompile Include="ChartApi\ChartGradient.cpp" />
+    <ClCompile Include="ChartApi\ChartGrid.cpp" />
+    <ClCompile Include="ChartApi\ChartLegend.cpp" />
+    <ClCompile Include="ChartApi\ChartLineSerie.cpp" />
+    <ClCompile Include="ChartApi\ChartLogarithmicAxis.cpp" />
+    <ClCompile Include="ChartApi\ChartPointsSerie.cpp" />
+    <ClCompile Include="ChartApi\ChartScrollBar.cpp" />
+    <ClCompile Include="ChartApi\ChartSerie.cpp" />
+    <ClCompile Include="ChartApi\ChartStandardAxis.cpp" />
+    <ClCompile Include="ChartApi\ChartSurfaceSerie.cpp" />
+    <ClCompile Include="ChartApi\ChartTitle.cpp" />
+    <ClCompile Include="ChartApi\ChartXYSerie.cpp" />
     <ClCompile Include="LIN_Project.cpp" />
     <ClCompile Include="LIN_ProjectDlg.cpp" />
     <ClCompile Include="pch.cpp">
@@ -207,6 +261,10 @@
     <ResourceCompile Include="LINProject.rc" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="ChartApi\ChartBalloonLabel.inl" />
+    <None Include="ChartApi\ChartLabel.inl" />
+    <None Include="ChartApi\ChartPointsArray.inl" />
+    <None Include="ChartApi\ChartSerieBase.inl" />
     <None Include="PLinApi.dll" />
     <None Include="res\LINProject.rc2" />
   </ItemGroup>

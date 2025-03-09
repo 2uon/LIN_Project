@@ -16,6 +16,9 @@
     <Filter Include="LIN">
       <UniqueIdentifier>{6443c7f5-3ea4-4179-be6d-792959cb03bb}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ChartApi">
+      <UniqueIdentifier>{10e4ec3d-69d9-489f-9bd6-47d79531d61d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="LIN_Project.h">
@@ -42,6 +45,99 @@
     <ClInclude Include="StdClass.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="ChartApi\ChartAxis.h">
+      <Filter>ChartApi</Filter>
+    </ClInclude>
+    <ClInclude Include="ChartApi\ChartAxisLabel.h">
+      <Filter>ChartApi</Filter>
+    </ClInclude>
+    <ClInclude Include="ChartApi\ChartBalloonLabel.h">
+      <Filter>ChartApi</Filter>
+    </ClInclude>
+    <ClInclude Include="ChartApi\ChartBarSerie.h">
+      <Filter>ChartApi</Filter>
+    </ClInclude>
+    <ClInclude Include="ChartApi\ChartCandlestickSerie.h">
+      <Filter>ChartApi</Filter>
+    </ClInclude>
+    <ClInclude Include="ChartApi\ChartCrossHairCursor.h">
+      <Filter>ChartApi</Filter>
+    </ClInclude>
+    <ClInclude Include="ChartApi\ChartCtrl.h">
+      <Filter>ChartApi</Filter>
+    </ClInclude>
+    <ClInclude Include="ChartApi\ChartCursor.h">
+      <Filter>ChartApi</Filter>
+    </ClInclude>
+    <ClInclude Include="ChartApi\ChartDateTimeAxis.h">
+      <Filter>ChartApi</Filter>
+    </ClInclude>
+    <ClInclude Include="ChartApi\ChartDragLineCursor.h">
+      <Filter>ChartApi</Filter>
+    </ClInclude>
+    <ClInclude Include="ChartApi\ChartFont.h">
+      <Filter>ChartApi</Filter>
+    </ClInclude>
+    <ClInclude Include="ChartApi\ChartGanttSerie.h">
+      <Filter>ChartApi</Filter>
+    </ClInclude>
+    <ClInclude Include="ChartApi\ChartGradient.h">
+      <Filter>ChartApi</Filter>
+    </ClInclude>
+    <ClInclude Include="ChartApi\ChartGrid.h">
+      <Filter>ChartApi</Filter>
+    </ClInclude>
+    <ClInclude Include="ChartApi\ChartLabel.h">
+      <Filter>ChartApi</Filter>
+    </ClInclude>
+    <ClInclude Include="ChartApi\ChartLegend.h">
+      <Filter>ChartApi</Filter>
+    </ClInclude>
+    <ClInclude Include="ChartApi\ChartLineSerie.h">
+      <Filter>ChartApi</Filter>
+    </ClInclude>
+    <ClInclude Include="ChartApi\ChartLogarithmicAxis.h">
+      <Filter>ChartApi</Filter>
+    </ClInclude>
+    <ClInclude Include="ChartApi\ChartMouseListener.h">
+      <Filter>ChartApi</Filter>
+    </ClInclude>
+    <ClInclude Include="ChartApi\ChartPointsArray.h">
+      <Filter>ChartApi</Filter>
+    </ClInclude>
+    <ClInclude Include="ChartApi\ChartPointsSerie.h">
+      <Filter>ChartApi</Filter>
+    </ClInclude>
+    <ClInclude Include="ChartApi\ChartScrollBar.h">
+      <Filter>ChartApi</Filter>
+    </ClInclude>
+    <ClInclude Include="ChartApi\ChartSerie.h">
+      <Filter>ChartApi</Filter>
+    </ClInclude>
+    <ClInclude Include="ChartApi\ChartSerieBase.h">
+      <Filter>ChartApi</Filter>
+    </ClInclude>
+    <ClInclude Include="ChartApi\ChartSeriesMouseListener.h">
+      <Filter>ChartApi</Filter>
+    </ClInclude>
+    <ClInclude Include="ChartApi\ChartStandardAxis.h">
+      <Filter>ChartApi</Filter>
+    </ClInclude>
+    <ClInclude Include="ChartApi\ChartString.h">
+      <Filter>ChartApi</Filter>
+    </ClInclude>
+    <ClInclude Include="ChartApi\ChartSurfaceSerie.h">
+      <Filter>ChartApi</Filter>
+    </ClInclude>
+    <ClInclude Include="ChartApi\ChartTitle.h">
+      <Filter>ChartApi</Filter>
+    </ClInclude>
+    <ClInclude Include="ChartApi\ChartXYSerie.h">
+      <Filter>ChartApi</Filter>
+    </ClInclude>
+    <ClInclude Include="ChartApi\PointsOrdering.h">
+      <Filter>ChartApi</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="LIN_Project.cpp">
@@ -56,6 +152,75 @@
     <ClCompile Include="StdClass.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="ChartApi\ChartAxis.cpp">
+      <Filter>ChartApi</Filter>
+    </ClCompile>
+    <ClCompile Include="ChartApi\ChartAxisLabel.cpp">
+      <Filter>ChartApi</Filter>
+    </ClCompile>
+    <ClCompile Include="ChartApi\ChartBarSerie.cpp">
+      <Filter>ChartApi</Filter>
+    </ClCompile>
+    <ClCompile Include="ChartApi\ChartCandlestickSerie.cpp">
+      <Filter>ChartApi</Filter>
+    </ClCompile>
+    <ClCompile Include="ChartApi\ChartCrossHairCursor.cpp">
+      <Filter>ChartApi</Filter>
+    </ClCompile>
+    <ClCompile Include="ChartApi\ChartCtrl.cpp">
+      <Filter>ChartApi</Filter>
+    </ClCompile>
+    <ClCompile Include="ChartApi\ChartCursor.cpp">
+      <Filter>ChartApi</Filter>
+    </ClCompile>
+    <ClCompile Include="ChartApi\ChartDateTimeAxis.cpp">
+      <Filter>ChartApi</Filter>
+    </ClCompile>
+    <ClCompile Include="ChartApi\ChartDragLineCursor.cpp">
+      <Filter>ChartApi</Filter>
+    </ClCompile>
+    <ClCompile Include="ChartApi\ChartFont.cpp">
+      <Filter>ChartApi</Filter>
+    </ClCompile>
+    <ClCompile Include="ChartApi\ChartGanttSerie.cpp">
+      <Filter>ChartApi</Filter>
+    </ClCompile>
+    <ClCompile Include="ChartApi\ChartGradient.cpp">
+      <Filter>ChartApi</Filter>
+    </ClCompile>
+    <ClCompile Include="ChartApi\ChartGrid.cpp">
+      <Filter>ChartApi</Filter>
+    </ClCompile>
+    <ClCompile Include="ChartApi\ChartLegend.cpp">
+      <Filter>ChartApi</Filter>
+    </ClCompile>
+    <ClCompile Include="ChartApi\ChartLineSerie.cpp">
+      <Filter>ChartApi</Filter>
+    </ClCompile>
+    <ClCompile Include="ChartApi\ChartLogarithmicAxis.cpp">
+      <Filter>ChartApi</Filter>
+    </ClCompile>
+    <ClCompile Include="ChartApi\ChartPointsSerie.cpp">
+      <Filter>ChartApi</Filter>
+    </ClCompile>
+    <ClCompile Include="ChartApi\ChartScrollBar.cpp">
+      <Filter>ChartApi</Filter>
+    </ClCompile>
+    <ClCompile Include="ChartApi\ChartSerie.cpp">
+      <Filter>ChartApi</Filter>
+    </ClCompile>
+    <ClCompile Include="ChartApi\ChartStandardAxis.cpp">
+      <Filter>ChartApi</Filter>
+    </ClCompile>
+    <ClCompile Include="ChartApi\ChartSurfaceSerie.cpp">
+      <Filter>ChartApi</Filter>
+    </ClCompile>
+    <ClCompile Include="ChartApi\ChartTitle.cpp">
+      <Filter>ChartApi</Filter>
+    </ClCompile>
+    <ClCompile Include="ChartApi\ChartXYSerie.cpp">
+      <Filter>ChartApi</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="LINProject.rc">
@@ -68,6 +233,18 @@
     </None>
     <None Include="PLinApi.dll">
       <Filter>LIN</Filter>
+    </None>
+    <None Include="ChartApi\ChartBalloonLabel.inl">
+      <Filter>ChartApi</Filter>
+    </None>
+    <None Include="ChartApi\ChartLabel.inl">
+      <Filter>ChartApi</Filter>
+    </None>
+    <None Include="ChartApi\ChartPointsArray.inl">
+      <Filter>ChartApi</Filter>
+    </None>
+    <None Include="ChartApi\ChartSerieBase.inl">
+      <Filter>ChartApi</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
