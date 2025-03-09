@@ -42,9 +42,6 @@
     <ClInclude Include="StdClass.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="GraphView.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="LIN_Project.cpp">
@@ -57,9 +54,6 @@
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="StdClass.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
-    <ClCompile Include="GraphView.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>

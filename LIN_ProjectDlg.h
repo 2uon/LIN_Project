@@ -209,6 +209,8 @@ public:
 	BOOL onPause = false;
 	BOOL onClear = false;
 
+	vector<int> graphSig = {};
+
 	CString progress;
 	CString errCode;
 	CString tx;
@@ -230,7 +232,6 @@ public:
 
 	CListCtrl mTraceList;
 	CListCtrl mSignalList;
-	CListCtrl mGraphsList;
 
 	CButton mCheckSig;
 
@@ -239,4 +240,7 @@ public:
 	afx_msg void OnCbnSelchangeSchedule();
 	CStatic mFrameName;
 	afx_msg void OnCbnSelchangeFrameid();
+	CListCtrl mGraphList;
+	afx_msg void OnMeasureItem(int nIDCtl, LPMEASUREITEMSTRUCT lpMeasureItemStruct);
+	afx_msg void OnLvnItemchangedSignallist(NMHDR* pNMHDR, LRESULT* pResult);
 };

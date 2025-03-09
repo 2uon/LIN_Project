@@ -78,7 +78,7 @@ void CLINProjectDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_SignalList, mSignalList);
 	DDX_Control(pDX, IDC_Schedule, mSchedule);
 	DDX_Control(pDX, IDC_FrameName, mFrameName);
-	DDX_Control(pDX, IDC_Graphs, mGraphsList);
+	DDX_Control(pDX, IDC_Graphs, mGraphList);
 }
 
 BEGIN_MESSAGE_MAP(CLINProjectDlg, CDialogEx)
@@ -92,6 +92,8 @@ BEGIN_MESSAGE_MAP(CLINProjectDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_OpenLog, &CLINProjectDlg::OnBnClickedOpenlog)
 	ON_CBN_SELCHANGE(IDC_Schedule, &CLINProjectDlg::OnCbnSelchangeSchedule)
 	ON_CBN_SELCHANGE(IDC_FrameId, &CLINProjectDlg::OnCbnSelchangeFrameid)
+	ON_WM_MEASUREITEM()
+	ON_NOTIFY(LVN_ITEMCHANGED, IDC_SignalList, &CLINProjectDlg::OnLvnItemchangedSignallist)
 END_MESSAGE_MAP()
 
 
@@ -141,6 +143,12 @@ BOOL CLINProjectDlg::OnInitDialog()
 	mSignalList.SetExtendedStyle(LVS_EX_CHECKBOXES | LVS_EX_GRIDLINES | LVS_EX_FULLROWSELECT);
 
 	mSignalList.InsertColumn(0, TEXT("Signal Name"), LVCFMT_LEFT, rtSignal.Width());
+
+	CRect rtGraph;
+	mGraphList.GetWindowRect(&rtGraph);
+	mGraphList.SetExtendedStyle(LVS_EX_GRIDLINES | LVS_EX_FULLROWSELECT | LVS_EX_DOUBLEBUFFER);
+
+	mGraphList.InsertColumn(0, TEXT("Graph"), LVCFMT_LEFT, rtGraph.Width());
 
 	return TRUE;  // 포커스를 컨트롤에 설정하지 않으면 TRUE를 반환합니다.
 }
@@ -217,9 +225,10 @@ int CLINProjectDlg::w_LDF_parse(string filePath) {
 	// 위젯 초기화
 	mSchedule.ResetContent();
 	mFrameId.ResetContent();
-	mFileName.SetWindowTextW(_T("- Frame Name -"));
+	mFrameName.SetWindowTextW(_T("- Frame Name -"));
 	mTraceList.DeleteAllItems();
 	mSignalList.DeleteAllItems();
+	mGraphList.DeleteAllItems();
 
 
 	ifstream file(filePath);
@@ -1149,4 +1158,33 @@ void CLINProjectDlg::OnBnClickedSend()
 
 		LIN_UpdateByteArray(hClient, hHw, 0x18, 0, 8, &sendData[0]);
 	}
+}
+
+void CLINProjectDlg::OnMeasureItem(int nIDCtl, LPMEASUREITEMSTRUCT lpMeasureItemStruct)
+{
+	if (nIDCtl == IDC_Graphs) {
+		lpMeasureItemStruct->itemHeight = 80;
+	}
+	CDialogEx::OnMeasureItem(nIDCtl, lpMeasureItemStruct);
+}
+
+void CLINProjectDlg::OnLvnItemchangedSignallist(NMHDR* pNMHDR, LRESULT* pResult)
+{
+	LPNMLISTVIEW pNMLV = reinterpret_cast<LPNMLISTVIEW>(pNMHDR);
+	if (pNMLV->uNewState & LVIS_STATEIMAGEMASK) // 체크박스 변경 감지
+	{
+		int index = pNMLV->iItem;
+		auto i = find(begin(graphSig), end(graphSig), index);
+
+		if (mSignalList.GetCheck(index)) {
+			CString msg;
+			msg.Format(_T("%d is Checked"), index);
+			MessageBox(msg);
+			graphSig.push_back(index);
+		}
+		else if (i != end(graphSig)) {
+			graphSig.erase(remove(graphSig.begin(), graphSig.end(), index), graphSig.end());
+		}
+	}
+	*pResult = 0;
 }
