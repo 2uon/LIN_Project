@@ -87,6 +87,15 @@ void CLINProjectDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_Graph7, mGraph[6]);
 	DDX_Control(pDX, IDC_Graph8, mGraph[7]);
 	DDX_Control(pDX, IDC_Graph9, mGraph[8]);
+	DDX_Control(pDX, IDC_Sig1, mSig[0]);
+	DDX_Control(pDX, IDC_Sig2, mSig[1]);
+	DDX_Control(pDX, IDC_Sig3, mSig[2]);
+	DDX_Control(pDX, IDC_Sig4, mSig[3]);
+	DDX_Control(pDX, IDC_Sig5, mSig[4]);
+	DDX_Control(pDX, IDC_Sig6, mSig[5]);
+	DDX_Control(pDX, IDC_Sig7, mSig[6]);
+	DDX_Control(pDX, IDC_Sig8, mSig[7]);
+	DDX_Control(pDX, IDC_Sig9, mSig[8]);
 }
 
 BEGIN_MESSAGE_MAP(CLINProjectDlg, CDialogEx)
@@ -212,10 +221,6 @@ HCURSOR CLINProjectDlg::OnQueryDragIcon()
 
 
 int CLINProjectDlg::w_LDF_parse(string filePath) {
-	// 그래프 초기화
-	for (int i = 0; i < 9; i++) {
-		initGraph(i);
-	}
 	// 초기화
 	w_Signals = {};
 	w_DiagnosticSignals = {};
@@ -1176,11 +1181,11 @@ void CLINProjectDlg::OnLvnItemchangedSignallist(NMHDR* pNMHDR, LRESULT* pResult)
 		auto i = find(begin(graphSig), end(graphSig), index);
 
 		if (mSignalList.GetCheck(index)) {
-			CString msg;
-			msg.Format(_T("%d is Checked"), index);
-			MessageBox(msg);
-			
 			graphSig.push_back(index);
+			for (int sig : graphSig) {
+				CString signal(w_Signals[sig].name.c_str());
+				mSig[sig].SetWindowTextW(signal);
+			}
 		}
 		else if (i != end(graphSig)) {
 			graphSig.erase(remove(graphSig.begin(), graphSig.end(), index), graphSig.end());
@@ -1204,8 +1209,6 @@ void CLINProjectDlg::initGraph(int index) {
 	/// 라인차트 파트
 	CChartXYSerie* pSeries = nullptr;
 	pSeries = mGraph[index].CreateLineSerie();
-
-	pBottomAxis->SetMinMax(0, 100);
 
 	/*double XVal[50];
 	double YVal[50];

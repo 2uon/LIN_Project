@@ -258,4 +258,7 @@ public:
 		IDC_Graph4, IDC_Graph5, IDC_Graph6,
 		IDC_Graph7, IDC_Graph8, IDC_Graph9
 	};
+
+	// 레이블
+	CStatic mSig[9];
 };
