@@ -57,6 +57,7 @@ public:
 
 	afx_msg void OnBnClickedOpenlog();
 
+
 	// 스레드
 	CWinThread* m_pThread;
 	bool m_bThreadRunning;
@@ -229,6 +230,7 @@ public:
 
 	CListCtrl mTraceList;
 	CListCtrl mSignalList;
+	CListCtrl mGraphsList;
 
 	CButton mCheckSig;
 

@@ -184,6 +184,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="framework.h" />
+    <ClInclude Include="GraphView.h" />
     <ClInclude Include="LIN_Project.h" />
     <ClInclude Include="LIN_ProjectDlg.h" />
     <ClInclude Include="pch.h" />
@@ -193,6 +194,7 @@
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="GraphView.cpp" />
     <ClCompile Include="LIN_Project.cpp" />
     <ClCompile Include="LIN_ProjectDlg.cpp" />
     <ClCompile Include="pch.cpp">

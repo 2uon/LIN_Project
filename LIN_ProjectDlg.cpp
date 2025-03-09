@@ -78,6 +78,7 @@ void CLINProjectDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_SignalList, mSignalList);
 	DDX_Control(pDX, IDC_Schedule, mSchedule);
 	DDX_Control(pDX, IDC_FrameName, mFrameName);
+	DDX_Control(pDX, IDC_Graphs, mGraphsList);
 }
 
 BEGIN_MESSAGE_MAP(CLINProjectDlg, CDialogEx)
@@ -139,8 +140,7 @@ BOOL CLINProjectDlg::OnInitDialog()
 	mSignalList.GetWindowRect(&rtSignal);
 	mSignalList.SetExtendedStyle(LVS_EX_CHECKBOXES | LVS_EX_GRIDLINES | LVS_EX_FULLROWSELECT);
 
-	mSignalList.InsertColumn(0, TEXT("Name"), LVCFMT_LEFT, rtSignal.Width());
-
+	mSignalList.InsertColumn(0, TEXT("Signal Name"), LVCFMT_LEFT, rtSignal.Width());
 
 	return TRUE;  // 포커스를 컨트롤에 설정하지 않으면 TRUE를 반환합니다.
 }
