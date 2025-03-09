@@ -78,7 +78,15 @@ void CLINProjectDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_SignalList, mSignalList);
 	DDX_Control(pDX, IDC_Schedule, mSchedule);
 	DDX_Control(pDX, IDC_FrameName, mFrameName);
-	DDX_Control(pDX, IDC_Graphs, mGraphList);
+	DDX_Control(pDX, IDC_Graph1, mGraph1);
+	DDX_Control(pDX, IDC_Graph2, mGraph2);
+	DDX_Control(pDX, IDC_Graph3, mGraph3);
+	DDX_Control(pDX, IDC_Graph4, mGraph4);
+	DDX_Control(pDX, IDC_Graph5, mGraph5);
+	DDX_Control(pDX, IDC_Graph6, mGraph6);
+	DDX_Control(pDX, IDC_Graph7, mGraph7);
+	DDX_Control(pDX, IDC_Graph8, mGraph8);
+	DDX_Control(pDX, IDC_Graph9, mGraph9);
 }
 
 BEGIN_MESSAGE_MAP(CLINProjectDlg, CDialogEx)
@@ -143,12 +151,6 @@ BOOL CLINProjectDlg::OnInitDialog()
 	mSignalList.SetExtendedStyle(LVS_EX_CHECKBOXES | LVS_EX_GRIDLINES | LVS_EX_FULLROWSELECT);
 
 	mSignalList.InsertColumn(0, TEXT("Signal Name"), LVCFMT_LEFT, rtSignal.Width());
-
-	CRect rtGraph;
-	mGraphList.GetWindowRect(&rtGraph);
-	mGraphList.SetExtendedStyle(LVS_EX_GRIDLINES | LVS_EX_FULLROWSELECT | LVS_EX_DOUBLEBUFFER);
-
-	mGraphList.InsertColumn(0, TEXT("Graph"), LVCFMT_LEFT, rtGraph.Width());
 
 	return TRUE;  // 포커스를 컨트롤에 설정하지 않으면 TRUE를 반환합니다.
 }
@@ -228,7 +230,6 @@ int CLINProjectDlg::w_LDF_parse(string filePath) {
 	mFrameName.SetWindowTextW(_T("- Frame Name -"));
 	mTraceList.DeleteAllItems();
 	mSignalList.DeleteAllItems();
-	mGraphList.DeleteAllItems();
 
 
 	ifstream file(filePath);
@@ -1160,14 +1161,6 @@ void CLINProjectDlg::OnBnClickedSend()
 	}
 }
 
-void CLINProjectDlg::OnMeasureItem(int nIDCtl, LPMEASUREITEMSTRUCT lpMeasureItemStruct)
-{
-	if (nIDCtl == IDC_Graphs) {
-		lpMeasureItemStruct->itemHeight = 80;
-	}
-	CDialogEx::OnMeasureItem(nIDCtl, lpMeasureItemStruct);
-}
-
 void CLINProjectDlg::OnLvnItemchangedSignallist(NMHDR* pNMHDR, LRESULT* pResult)
 {
 	LPNMLISTVIEW pNMLV = reinterpret_cast<LPNMLISTVIEW>(pNMHDR);
@@ -1180,6 +1173,7 @@ void CLINProjectDlg::OnLvnItemchangedSignallist(NMHDR* pNMHDR, LRESULT* pResult)
 			CString msg;
 			msg.Format(_T("%d is Checked"), index);
 			MessageBox(msg);
+			
 			graphSig.push_back(index);
 		}
 		else if (i != end(graphSig)) {

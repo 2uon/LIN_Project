@@ -240,7 +240,14 @@ public:
 	afx_msg void OnCbnSelchangeSchedule();
 	CStatic mFrameName;
 	afx_msg void OnCbnSelchangeFrameid();
-	CListCtrl mGraphList;
-	afx_msg void OnMeasureItem(int nIDCtl, LPMEASUREITEMSTRUCT lpMeasureItemStruct);
 	afx_msg void OnLvnItemchangedSignallist(NMHDR* pNMHDR, LRESULT* pResult);
+	CStatic mGraph1;
+	CStatic mGraph2;
+	CStatic mGraph3;
+	CStatic mGraph4;
+	CStatic mGraph5;
+	CStatic mGraph6;
+	CStatic mGraph7;
+	CStatic mGraph8;
+	CStatic mGraph9;
 };
