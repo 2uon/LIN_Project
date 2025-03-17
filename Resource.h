@@ -19,7 +19,6 @@
 #define IDC_RX                          1009
 #define IDC_Tx0                         1010
 #define IDC_COMBO1                      1011
-#define IDC_Start3                      1011
 #define IDC_Disconnect                  1011
 #define IDC_Tx2                         1012
 #define IDC_Tx3                         1013
@@ -40,6 +39,7 @@
 #define IDC_SignalList                  1033
 #define IDC_FrameName                   1035
 #define IDC_CHECK1                      1036
+#define IDC_Save                        1036
 #define IDC_CHECK2                      1037
 #define IDC_CHECK3                      1038
 #define IDC_LIST2                       1039
@@ -63,6 +63,7 @@
 #define IDC_Sig7                        1074
 #define IDC_Sig9                        1075
 #define IDC_BUTTON1                     1078
+#define IDC_RADIO1                      1088
 
 // Next default values for new objects
 // 
@@ -70,7 +71,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        131
 #define _APS_NEXT_COMMAND_VALUE         32771
-#define _APS_NEXT_CONTROL_VALUE         1088
+#define _APS_NEXT_CONTROL_VALUE         1089
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

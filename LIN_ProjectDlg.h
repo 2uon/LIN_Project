@@ -32,6 +32,7 @@ public:
 	int wLIN_clear();
 	
 	void wReadData();
+	void wSaveData();
 
 
 	// 파싱 함수
@@ -295,4 +296,6 @@ public:
 	virtual BOOL PreTranslateMessage(MSG* pMsg);
 	afx_msg void OnBnClickedConnect();
 	afx_msg void OnBnClickedDisconnect();
+	afx_msg void OnBnClickedSave();
+	CButton mSave;
 };

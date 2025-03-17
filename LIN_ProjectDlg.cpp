@@ -96,6 +96,7 @@ void CLINProjectDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_Sig7, mSig[6]);
 	DDX_Control(pDX, IDC_Sig8, mSig[7]);
 	DDX_Control(pDX, IDC_Sig9, mSig[8]);
+	DDX_Control(pDX, IDC_Save, mSave);
 }
 
 BEGIN_MESSAGE_MAP(CLINProjectDlg, CDialogEx)
@@ -113,6 +114,7 @@ BEGIN_MESSAGE_MAP(CLINProjectDlg, CDialogEx)
 	ON_NOTIFY(LVN_ITEMCHANGED, IDC_SignalList, &CLINProjectDlg::OnLvnItemchangedSignallist)
 	ON_BN_CLICKED(IDC_Connect, &CLINProjectDlg::OnBnClickedConnect)
 	ON_BN_CLICKED(IDC_Disconnect, &CLINProjectDlg::OnBnClickedDisconnect)
+	ON_BN_CLICKED(IDC_Save, &CLINProjectDlg::OnBnClickedSave)
 END_MESSAGE_MAP()
 
 
@@ -708,7 +710,138 @@ int CLINProjectDlg::w_LDF_parse(string filePath) {
 	//	MessageBox(test);
 	//}
 
-	wLIN_connect();
+	// 기본 세팅
+	// 클라이언트 생성
+	result = LIN_RegisterClient(const_cast<char*>(w_Client_name.c_str()), 0, &hClient);
+
+	mProgress.SetWindowTextW(_T("클라이언트 생성"));
+	errCode.Format(_T("%d"), result);
+	mErrCode.SetWindowTextW(errCode);
+
+
+	// 하드웨어 등록
+	for (HLINHW hw : HW_TYPES) {
+		hHw = hw;
+		result = LIN_ConnectClient(hClient, hHw);
+		if (result == errOK) {
+			break;
+		}
+	}
+	mProgress.SetWindowTextW(_T("하드웨어 등록"));
+	errCode.Format(_T("%d"), result);
+	mErrCode.SetWindowTextW(errCode);
+
+	if (result != errOK) {
+		hHw = 0;
+	}
+
+	// 하드웨어 초기화 (마스터 모드, 19200 bit rate)
+	result = LIN_InitializeHardware(hClient, hHw, modMaster, w_LIN_speed * 1000);
+
+	mProgress.SetWindowTextW(_T("하드웨어 초기화"));
+	errCode.Format(_T("%d"), result);
+	mErrCode.SetWindowTextW(errCode);
+
+
+	if (result != errOK) {
+		LIN_DisconnectClient(hClient, hHw);
+		LIN_RemoveClient(hClient);
+	}
+	// 프레임 id 초기화
+	for (BYTE frameId : FRAME_IDS) {
+		result = LIN_RegisterFrameId(hClient, hHw, frameId, frameId);
+	}
+
+	// 프레임
+	for (w_Frame frame : w_Frames) {
+		TLINFrameEntry f = {};
+		f.FrameId = frame.id;
+		f.ChecksumType = cstEnhanced;
+		f.Length = frame.length;
+
+		/*CString temp(frame.txNode.c_str());
+		MessageBox(_T("/") + temp + "/");*/
+
+		if (frame.txNode == w_Client_name) {
+
+			f.Flags = FRAME_FLAG_RESPONSE_ENABLE;
+			f.Direction = dirPublisher;
+			memset(f.InitialData, 0, sizeof(data));
+		}
+		else {
+			f.Direction = dirSubscriber;
+			memset(f.InitialData, 0, sizeof(data));
+		}
+
+		result = LIN_SetFrameEntry(hClient, hHw, &f);
+
+		Frames.push_back(f);
+		FrameNames.push_back(frame.name);
+		FrameIDs.push_back(frame.id);
+	}
+
+	// 스케줄
+	for (w_ScheduleTable scheduleTable : w_ScheduleTables) {
+		w_Schedules s;
+		int i = 0;
+		s.schedulesPosition = schedulesSize;
+		for (w_Schedule schedule : scheduleTable.schedule) {
+			int id = 0;
+
+			id = find(FrameNames.begin(), FrameNames.end(), schedule.name) - FrameNames.begin();
+			s.Schedule[i].Type = sltUnconditional;
+			s.Schedule[i].FrameId[0] = FrameIDs[id];
+			s.Schedule[i].Delay = schedule.delay;
+			i++;
+		}
+		s.size = i;
+
+
+		result = LIN_SetSchedule(hClient, hHw, schedulesSize, s.Schedule, s.size);
+
+		mProgress.SetWindowTextW(_T("스케줄 설정"));
+		errCode.Format(_T("%d"), result);
+		mErrCode.SetWindowTextW(errCode);
+
+		Schdules[schedulesSize] = s;
+		schedulesSize++;
+
+		CString temp(scheduleTable.name.c_str());
+		mSchedule.AddString(temp);
+	}
+
+	// 신호
+	int sigItem = 0;
+	for (w_Frame f : w_Frames) {
+		vector<signalStartEnd> signalEncoding;
+		for (w_DataStruct d : f.w_Data) {
+			CString temp(d.name.c_str());
+			mSignalList.InsertItem(sigItem, temp);
+
+			signalStartEnd sig;
+			sig.sigIndex = sigItem++;
+			sig.name = d.name;
+			sig.start = d.start;
+
+			int minLength = f.length * 8 - 1 - d.start;
+			for (w_DataStruct temp_d : f.w_Data) {
+				int length = temp_d.start - d.start;
+				if (length > 0 && length < minLength) {
+					minLength = length;
+				}
+			}
+			sig.end = sig.start + minLength;
+			signalEncoding.push_back(sig);
+
+			// 데이터 틀 추가
+			graphData a = {};
+			a.timesArr[a.position] = 0;
+			a.valuesArr[a.position] = 0;
+			a.position++;
+			signalDatas.push_back(a);
+		}
+		signalEncodings[f.id] = signalEncoding;
+	}
 
 	CString FilePath(filePath.c_str());
 	mFileName.SetWindowTextW(FilePath);
@@ -931,96 +1064,18 @@ int CLINProjectDlg::wLIN_connect() {
 		result = LIN_RegisterFrameId(hClient, hHw, frameId, frameId);
 	}
 
-
 	// 프레임
-	for (w_Frame frame : w_Frames) {
-		TLINFrameEntry f = {};
-		f.FrameId = frame.id;
-		f.ChecksumType = cstEnhanced;
-		f.Length = frame.length;
-
-		/*CString temp(frame.txNode.c_str());
-		MessageBox(_T("/") + temp + "/");*/
-
-		if (frame.txNode == w_Client_name) {
-
-			f.Flags = FRAME_FLAG_RESPONSE_ENABLE;
-			f.Direction = dirPublisher;
-			memset(f.InitialData, 0, sizeof(data));
-		}
-		else {
-			f.Direction = dirSubscriber;
-			memset(f.InitialData, 0, sizeof(data));
-		}
-
+	for (TLINFrameEntry f : Frames) {
 		result = LIN_SetFrameEntry(hClient, hHw, &f);
-
-		Frames.push_back(f);
-		FrameNames.push_back(frame.name);
-		FrameIDs.push_back(frame.id);
 	}
 
 	// 스케줄
-	for (w_ScheduleTable scheduleTable : w_ScheduleTables) {
-		w_Schedules s;
-		int i = 0;
-		s.schedulesPosition = schedulesSize;
-		for (w_Schedule schedule : scheduleTable.schedule) {
-			int id = 0;
-
-			id = find(FrameNames.begin(), FrameNames.end(), schedule.name) - FrameNames.begin();
-			s.Schedule[i].Type = sltUnconditional;
-			s.Schedule[i].FrameId[0] = FrameIDs[id];
-			s.Schedule[i].Delay = schedule.delay;
-			i++;
-		}
-		s.size = i;
-
-
+	for (w_Schedules s : Schdules) {
 		result = LIN_SetSchedule(hClient, hHw, schedulesSize, s.Schedule, s.size);
 
 		mProgress.SetWindowTextW(_T("스케줄 설정"));
 		errCode.Format(_T("%d"), result);
 		mErrCode.SetWindowTextW(errCode);
-
-		Schdules[schedulesSize] = s;
-		schedulesSize++;
-
-		CString temp(scheduleTable.name.c_str());
-		mSchedule.AddString(temp);
-	}
-
-	// 신호
-	int sigItem = 0;
-	for (w_Frame f : w_Frames) {
-		vector<signalStartEnd> signalEncoding;
-		for (w_DataStruct d : f.w_Data) {
-			CString temp(d.name.c_str());
-			mSignalList.InsertItem(sigItem, temp);
-
-			signalStartEnd sig;
-			sig.sigIndex = sigItem++;
-			sig.name = d.name;
-			sig.start = d.start;
-
-			int minLength = f.length * 8 - 1 - d.start;
-			for (w_DataStruct temp_d : f.w_Data) {
-				int length = temp_d.start - d.start;
-				if (length > 0 && length < minLength) {
-					minLength = length;
-				}
-			}
-			sig.end = sig.start + minLength;
-			signalEncoding.push_back(sig);
-
-			// 데이터 틀 추가
-			graphData a = {};
-			a.timesArr[a.position] = 0;
-			a.valuesArr[a.position] = 0;
-			a.position++;
-			signalDatas.push_back(a);
-		}
-		signalEncodings[f.id] = signalEncoding;
 	}
 	return 0;
 }
@@ -1164,6 +1219,15 @@ void CLINProjectDlg::wReadData() {
 	}
 	return;
 }
+
+void CLINProjectDlg::wSaveData() {
+	////////////////////
+	if (onPause) {
+	}
+	if (onClear) {
+	}
+}
+
 // 신호 파싱
 /*
 double value;
@@ -1403,4 +1467,17 @@ void CLINProjectDlg::OnBnClickedConnect()
 void CLINProjectDlg::OnBnClickedDisconnect()
 {
 	wLIN_clear();
+}
+
+void CLINProjectDlg::OnBnClickedSave()
+{
+	//////// .linlog 파일 만들고 기본 세팅 저장
+	if (mSave.GetCheck()) {
+		// Save 체크 했을 때 구현
+		MessageBox(_T("a"));
+	}
+	else {
+		// Save 체크 해제 했을 때 구현
+
+	}
 }
