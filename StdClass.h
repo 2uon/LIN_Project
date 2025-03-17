@@ -7,5 +7,6 @@
 #include <map>
 #include <algorithm>
 #include <array>
+#include <bitset>
 
 using namespace std;

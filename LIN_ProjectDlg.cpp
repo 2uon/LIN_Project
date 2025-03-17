@@ -111,6 +111,8 @@ BEGIN_MESSAGE_MAP(CLINProjectDlg, CDialogEx)
 	ON_CBN_SELCHANGE(IDC_FrameId, &CLINProjectDlg::OnCbnSelchangeFrameid)
 	ON_WM_MEASUREITEM()
 	ON_NOTIFY(LVN_ITEMCHANGED, IDC_SignalList, &CLINProjectDlg::OnLvnItemchangedSignallist)
+	ON_BN_CLICKED(IDC_Connect, &CLINProjectDlg::OnBnClickedConnect)
+	ON_BN_CLICKED(IDC_Disconnect, &CLINProjectDlg::OnBnClickedDisconnect)
 END_MESSAGE_MAP()
 
 
@@ -218,9 +220,7 @@ HCURSOR CLINProjectDlg::OnQueryDragIcon()
 	return static_cast<HCURSOR>(m_hIcon);
 }
 
-
-
-int CLINProjectDlg::w_LDF_parse(string filePath) {
+void CLINProjectDlg::initPharam() {
 	// 초기화
 	w_Signals = {};
 	w_DiagnosticSignals = {};
@@ -234,7 +234,8 @@ int CLINProjectDlg::w_LDF_parse(string filePath) {
 	FrameIDs = {};
 	schedulesSize = 0;
 	schedule_position = 0;
-	
+	graphSig = {};
+
 	// 위젯 초기화
 	mSchedule.ResetContent();
 	mFrameId.ResetContent();
@@ -242,7 +243,20 @@ int CLINProjectDlg::w_LDF_parse(string filePath) {
 	mTraceList.DeleteAllItems();
 	mSignalList.DeleteAllItems();
 
+	// 그래프 초기화
+	for (int i = 0; i < 9; i++) {
+		mSig[i].SetWindowTextW(_T(""));
+		pSeries[i]->RemovePointsFromBegin(pSeries[i]->GetPointsCount());
+	}
 
+	// 그래프 변수 초기화
+	signalEncodings = {};
+	time = 0;
+	signalDatas = {};
+
+}
+
+int CLINProjectDlg::w_LDF_parse(string filePath) {
 	ifstream file(filePath);
 	if (!file.is_open()) {
 		return -1;
@@ -276,10 +290,6 @@ int CLINProjectDlg::w_LDF_parse(string filePath) {
 		else if (line.find("Signal_encoding_types {") != string::npos) {
 			section = "Signal_encoding_types";
 		}
-		//else if (line.find("Signal_representation {") != string::npos) {
-		//	section = "Signal_representation";
-		//}
-
 		// Config
 		else if (line.find("LIN_protocol_version = ") != string::npos) {
 			section = "";
@@ -698,113 +708,7 @@ int CLINProjectDlg::w_LDF_parse(string filePath) {
 	//	MessageBox(test);
 	//}
 
-	// 기본 세팅
-	// 클라이언트 생성
-	result = LIN_RegisterClient(const_cast<char*>(w_Client_name.c_str()), 0, &hClient);
-
-	mProgress.SetWindowTextW(_T("클라이언트 생성"));
-	errCode.Format(_T("%d"), result);
-	mErrCode.SetWindowTextW(errCode);
-
-
-	// 하드웨어 등록
-	for (HLINHW hw : HW_TYPES) {
-		hHw = hw;
-		result = LIN_ConnectClient(hClient, hHw);
-		if (result == errOK) {
-			break;
-		}
-	}
-	mProgress.SetWindowTextW(_T("하드웨어 등록"));
-	errCode.Format(_T("%d"), result);
-	mErrCode.SetWindowTextW(errCode);
-
-	if (result != errOK) {
-		hHw = 0;
-	}
-
-	// 하드웨어 초기화 (마스터 모드, 19200 bit rate)
-	result = LIN_InitializeHardware(hClient, hHw, modMaster, w_LIN_speed * 1000);
-
-	mProgress.SetWindowTextW(_T("하드웨어 초기화"));
-	errCode.Format(_T("%d"), result);
-	mErrCode.SetWindowTextW(errCode);
-
-
-	if (result != errOK) {
-		LIN_DisconnectClient(hClient, hHw);
-		LIN_RemoveClient(hClient);
-	}
-	// 프레임 id 초기화
-	for (BYTE frameId : FRAME_IDS) {
-		result = LIN_RegisterFrameId(hClient, hHw, frameId, frameId);
-	}
-
-	
-	// 프레임
-	for (w_Frame frame : w_Frames) {
-		TLINFrameEntry f = {};
-		f.FrameId = frame.id;
-		f.ChecksumType = cstEnhanced;
-		f.Length = frame.length;
-
-		/*CString temp(frame.txNode.c_str());
-		MessageBox(_T("/") + temp + "/");*/
-
-		if (frame.txNode == w_Client_name) {
-
-			f.Flags = FRAME_FLAG_RESPONSE_ENABLE;
-			f.Direction = dirPublisher;
-			memset(f.InitialData, 0, sizeof(data));
-		}
-		else {
-			f.Direction = dirSubscriber;
-			memset(f.InitialData, 0, sizeof(data));
-		}
-
-		result = LIN_SetFrameEntry(hClient, hHw, &f);
-
-		Frames.push_back(f);
-		FrameNames.push_back(frame.name);
-		FrameIDs.push_back(frame.id);
-	}
-
-	// 스케줄
-	for (w_ScheduleTable scheduleTable : w_ScheduleTables) {
-		w_Schedules s;
-		int i = 0;
-		s.schedulesPosition = schedulesSize;
-		for (w_Schedule schedule : scheduleTable.schedule) {
-			int id = 0;
-
-			id = find(FrameNames.begin(), FrameNames.end(), schedule.name) - FrameNames.begin();
-			s.Schedule[i].Type = sltUnconditional;
-			s.Schedule[i].FrameId[0] = FrameIDs[id];
-			s.Schedule[i].Delay = schedule.delay;
-			i++;
-		}
-		s.size = i;
-		
-
-		result = LIN_SetSchedule(hClient, hHw, schedulesSize, s.Schedule, s.size);
-
-		mProgress.SetWindowTextW(_T("스케줄 설정"));
-		errCode.Format(_T("%d"), result);
-		mErrCode.SetWindowTextW(errCode);
-
-		Schdules[schedulesSize] = s;
-		schedulesSize++;
-		
-		CString temp(scheduleTable.name.c_str());
-		mSchedule.AddString(temp);
-	}
-	
-	// 신호
-	int sigItem = 0;
-	for (w_Signal signal : w_Signals) {
-		CString temp(signal.name.c_str());
-		mSignalList.InsertItem(sigItem++, temp);
-	}
+	wLIN_connect();
 
 	CString FilePath(filePath.c_str());
 	mFileName.SetWindowTextW(FilePath);
@@ -880,6 +784,11 @@ void CLINProjectDlg::w_Parser_Nodes(string& line) {
 	}
 
 }
+
+int CLINProjectDlg::w_LINLOG_parse(string filePath) {
+	MessageBox(_T("txt"));
+}
+
 void CLINProjectDlg::w_Parser_Signals(string& line) {
 	stringstream ss(line);
 	w_Signal sig;
@@ -959,7 +868,9 @@ int CLINProjectDlg::wLIN_start() {
 	if (result == errOK && !m_bThreadRunning) {
 		m_bThreadRunning = true;
 		m_pThread = AfxBeginThread(wReadDataThread, this);
-	}
+		m_pThread = AfxBeginThread(wTimerThread, this);
+		m_pThread = AfxBeginThread(wGraphDrawThread, this);
+	}	
 
 	return 0;
 }
@@ -974,6 +885,143 @@ int CLINProjectDlg::wLIN_pause() {
 	mErrCode.SetWindowTextW(errCode);
 
 	onPause = true;
+	return 0;
+}
+
+int CLINProjectDlg::wLIN_connect() {
+	// 기본 세팅
+	// 클라이언트 생성
+	result = LIN_RegisterClient(const_cast<char*>(w_Client_name.c_str()), 0, &hClient);
+
+	mProgress.SetWindowTextW(_T("클라이언트 생성"));
+	errCode.Format(_T("%d"), result);
+	mErrCode.SetWindowTextW(errCode);
+
+
+	// 하드웨어 등록
+	for (HLINHW hw : HW_TYPES) {
+		hHw = hw;
+		result = LIN_ConnectClient(hClient, hHw);
+		if (result == errOK) {
+			break;
+		}
+	}
+	mProgress.SetWindowTextW(_T("하드웨어 등록"));
+	errCode.Format(_T("%d"), result);
+	mErrCode.SetWindowTextW(errCode);
+
+	if (result != errOK) {
+		hHw = 0;
+	}
+
+	// 하드웨어 초기화 (마스터 모드, 19200 bit rate)
+	result = LIN_InitializeHardware(hClient, hHw, modMaster, w_LIN_speed * 1000);
+
+	mProgress.SetWindowTextW(_T("하드웨어 초기화"));
+	errCode.Format(_T("%d"), result);
+	mErrCode.SetWindowTextW(errCode);
+
+
+	if (result != errOK) {
+		LIN_DisconnectClient(hClient, hHw);
+		LIN_RemoveClient(hClient);
+	}
+	// 프레임 id 초기화
+	for (BYTE frameId : FRAME_IDS) {
+		result = LIN_RegisterFrameId(hClient, hHw, frameId, frameId);
+	}
+
+
+	// 프레임
+	for (w_Frame frame : w_Frames) {
+		TLINFrameEntry f = {};
+		f.FrameId = frame.id;
+		f.ChecksumType = cstEnhanced;
+		f.Length = frame.length;
+
+		/*CString temp(frame.txNode.c_str());
+		MessageBox(_T("/") + temp + "/");*/
+
+		if (frame.txNode == w_Client_name) {
+
+			f.Flags = FRAME_FLAG_RESPONSE_ENABLE;
+			f.Direction = dirPublisher;
+			memset(f.InitialData, 0, sizeof(data));
+		}
+		else {
+			f.Direction = dirSubscriber;
+			memset(f.InitialData, 0, sizeof(data));
+		}
+
+		result = LIN_SetFrameEntry(hClient, hHw, &f);
+
+		Frames.push_back(f);
+		FrameNames.push_back(frame.name);
+		FrameIDs.push_back(frame.id);
+	}
+
+	// 스케줄
+	for (w_ScheduleTable scheduleTable : w_ScheduleTables) {
+		w_Schedules s;
+		int i = 0;
+		s.schedulesPosition = schedulesSize;
+		for (w_Schedule schedule : scheduleTable.schedule) {
+			int id = 0;
+
+			id = find(FrameNames.begin(), FrameNames.end(), schedule.name) - FrameNames.begin();
+			s.Schedule[i].Type = sltUnconditional;
+			s.Schedule[i].FrameId[0] = FrameIDs[id];
+			s.Schedule[i].Delay = schedule.delay;
+			i++;
+		}
+		s.size = i;
+
+
+		result = LIN_SetSchedule(hClient, hHw, schedulesSize, s.Schedule, s.size);
+
+		mProgress.SetWindowTextW(_T("스케줄 설정"));
+		errCode.Format(_T("%d"), result);
+		mErrCode.SetWindowTextW(errCode);
+
+		Schdules[schedulesSize] = s;
+		schedulesSize++;
+
+		CString temp(scheduleTable.name.c_str());
+		mSchedule.AddString(temp);
+	}
+
+	// 신호
+	int sigItem = 0;
+	for (w_Frame f : w_Frames) {
+		vector<signalStartEnd> signalEncoding;
+		for (w_DataStruct d : f.w_Data) {
+			CString temp(d.name.c_str());
+			mSignalList.InsertItem(sigItem, temp);
+
+			signalStartEnd sig;
+			sig.sigIndex = sigItem++;
+			sig.name = d.name;
+			sig.start = d.start;
+
+			int minLength = f.length * 8 - 1 - d.start;
+			for (w_DataStruct temp_d : f.w_Data) {
+				int length = temp_d.start - d.start;
+				if (length > 0 && length < minLength) {
+					minLength = length;
+				}
+			}
+			sig.end = sig.start + minLength;
+			signalEncoding.push_back(sig);
+
+			// 데이터 틀 추가
+			graphData a = {};
+			a.timesArr[a.position] = 0;
+			a.valuesArr[a.position] = 0;
+			a.position++;
+			signalDatas.push_back(a);
+		}
+		signalEncodings[f.id] = signalEncoding;
+	}
 	return 0;
 }
 
@@ -994,6 +1042,45 @@ int CLINProjectDlg::wLIN_clear() {
 	return 0;
 }
 
+UINT CLINProjectDlg::wGraphDrawThread(LPVOID pParam) {
+	CLINProjectDlg* pDlg = reinterpret_cast<CLINProjectDlg*>(pParam);
+	if (pDlg) {
+		pDlg->wGraphDraw();  // 실제 데이터 읽기 함수 실행
+	}
+	return 0;
+}
+
+void CLINProjectDlg::wGraphDraw() {
+	while (m_bThreadRunning) {
+		for (int i = 0; i < graphSig.size(); i++) {
+			int index = graphSig[i];
+			int pointCnt = signalDatas[index].position;
+			pSeries[i]->RemovePointsFromBegin(pointCnt);
+			pSeries[i]->AddPoints(
+				signalDatas[index].timesArr, 
+				signalDatas[index].valuesArr, 
+				signalDatas[index].position
+			);
+		}
+		Sleep(1000);
+	}
+}
+
+UINT CLINProjectDlg::wTimerThread(LPVOID pParam) {
+	CLINProjectDlg* pDlg = reinterpret_cast<CLINProjectDlg*>(pParam);
+	if (pDlg) {
+		pDlg->wTimer();  // 실제 데이터 읽기 함수 실행
+	}
+	return 0;
+}
+
+void CLINProjectDlg::wTimer() {
+	while (m_bThreadRunning) {
+		time += 0.1;
+		Sleep(100);
+	}
+}
+
 UINT CLINProjectDlg::wReadDataThread(LPVOID pParam) {
 	CLINProjectDlg* pDlg = reinterpret_cast<CLINProjectDlg*>(pParam);
 	if (pDlg) {
@@ -1008,6 +1095,7 @@ void CLINProjectDlg::wReadData() {
 	LIN_SetClientFilter(hClient, hHw, Filter);
 
 	while (m_bThreadRunning) {
+		Sleep(1);
 		// 읽기 정지 (정지, 연결 해제)
 		if (onPause) {
 			break;
@@ -1016,48 +1104,99 @@ void CLINProjectDlg::wReadData() {
 			onClear = false;
 			break;
 		}
+		for (int read = 0; read < w_Frames.size(); read++) {
 
-		// 데이터 읽기
-		result = LIN_Read(hClient, &rcvMsg);
-		if (result != errOK) {
-			cout << "데이터 읽기 실패 :" << result << endl;
+			// 데이터 읽기
+			result = LIN_Read(hClient, &rcvMsg);
+			if (result != errOK) {
+				mProgress.SetWindowTextW(_T("데이터 읽기"));
+				errCode.Format(_T("%d"), result);
+				mErrCode.SetWindowTextW(errCode);
 
-			mProgress.SetWindowTextW(_T("데이터 읽기"));
-			errCode.Format(_T("%d"), result);
-			mErrCode.SetWindowTextW(errCode);
-
-		}
-		else {
-			cout << "데이터 읽기 성공 frame id :" << (rcvMsg.FrameId & 0x3F) << endl;
-			cout << "Data :";
-
-			for (int i = 0; i < 8; i++) {
-				cout << hex << uppercase << (int)rcvMsg.Data[i] << " ";
 			}
-			cout << endl;
-			
-			mProgress.SetWindowTextW(_T("데이터 읽기"));
-			errCode.Format(_T("%d"), result);
-			mErrCode.SetWindowTextW(errCode);
-			
-			int nItemNum = find(FrameIDs.begin(), FrameIDs.end(), (rcvMsg.FrameId & 0x3F)) - FrameIDs.begin();
-			CString frameID;
-			CString data;
-			CString flag;
+			else {
+				mProgress.SetWindowTextW(_T("데이터 읽기"));
+				errCode.Format(_T("%d"), result);
+				mErrCode.SetWindowTextW(errCode);
 
-			frameID.Format(_T("0x%X"), (rcvMsg.FrameId & 0x3F));
-			data.Format(_T("%X %X %X %X %X %X %X %X"), rcvMsg.Data[0], rcvMsg.Data[1], rcvMsg.Data[2], rcvMsg.Data[3],
-				rcvMsg.Data[4], rcvMsg.Data[5], rcvMsg.Data[6], rcvMsg.Data[7]);
-			flag.Format(_T("%X"), rcvMsg.ErrorFlags);
+				// Trace 값
+				int nItemNum = find(FrameIDs.begin(), FrameIDs.end(), (rcvMsg.FrameId & 0x3F)) - FrameIDs.begin();
+				CString frameID;
+				CString data;
+				CString flag;
 
-			mTraceList.SetItemText(nItemNum, 0, frameID);
-			mTraceList.SetItemText(nItemNum, 1, data);
-			mTraceList.SetItemText(nItemNum, 2, flag);
+				frameID.Format(_T("0x%X"), (rcvMsg.FrameId & 0x3F));
+				data.Format(_T("%X %X %X %X %X %X %X %X"), rcvMsg.Data[0], rcvMsg.Data[1], rcvMsg.Data[2], rcvMsg.Data[3],
+					rcvMsg.Data[4], rcvMsg.Data[5], rcvMsg.Data[6], rcvMsg.Data[7]);
+				flag.Format(_T("%X"), rcvMsg.ErrorFlags);
+
+				mTraceList.SetItemText(nItemNum, 0, frameID);
+				mTraceList.SetItemText(nItemNum, 1, data);
+				mTraceList.SetItemText(nItemNum, 2, flag);
+
+				int Data = 0;
+				int d8 = 1;
+				for (int j = rcvMsg.Length - 1; j >= 0; j--) {
+					Data += rcvMsg.Data[j] * d8;
+					d8 *= 8;
+				}
+
+				for (signalStartEnd sig : signalEncodings[(rcvMsg.FrameId & 0x3F)]) {
+					double value;
+
+					int Data1 = Data >> ((rcvMsg.Length * 8) - sig.end);
+					int Data2 = Data >> ((rcvMsg.Length * 8) - sig.start);
+					Data2 <<= (sig.end - sig.start);
+
+					value = Data1 - Data2;
+
+					
+					graphData a = {};
+					a.timesArr[signalDatas[sig.sigIndex].position] = time;
+					a.valuesArr[signalDatas[sig.sigIndex].position] = value;
+					signalDatas[sig.sigIndex].position++;
+					signalDatas[sig.sigIndex] = a;
+				}
+				
+
+			}
 		}
-		Sleep(delay);
 	}
 	return;
 }
+// 신호 파싱
+/*
+double value;
+int Data = 0;
+int d8 = 1;
+for (int j = rcvMsg.Length - 1; j >= 0; j--) {
+	Data += rcvMsg.Data[j] * d8;
+	d8 *= 8;
+}
+
+//data = 0000 0000 0001 "0000" 1000 0000 0000 0000
+//start = 12, end = 16
+//데이터를 (전체 데이터 길이 - end) 만큼 right shift 해야함.
+//data1 = 0000 0000 0001 "0000"
+//
+//앞 부분을 지우기 위해 먼저 앞부분만 남김.
+//데이터를 (전체 데이터 길이 - start) 만큼 right shift 해야함.
+//data2 = 0000 0000 0001
+//
+//빈 데이터를 구해야 하는 데이터 위치에 넣음.
+//데이터를 데이터 길이 = (end - start) 만큼 left shift 해야함.
+//data2 = 0000 0000 0001 0000
+//
+//data1 - data2 를 하면 앞부분을 날릴 수 있음.
+//=> 완료
+
+
+int Data1 = Data >> ((rcvMsg.Length * 8) - sig.end);
+int Data2 = Data >> ((rcvMsg.Length * 8) - sig.start);
+Data2 <<= (sig.end - sig.start);
+
+value = Data1 - Data2;
+*/
 
 void CLINProjectDlg::OnBnClickedStart()
 {
@@ -1081,18 +1220,25 @@ void CLINProjectDlg::OnBnClickedStop()
 
 void CLINProjectDlg::OnBnClickedOpenlog()
 {
-	static TCHAR BASED_CODE szFilter[] = _T("데이터베이스 (*.ldf) | *.ldf;||");
+	initPharam();
+
+	static TCHAR BASED_CODE szFilter[] = _T("모든 파일 (*.ldf, *.linlog)|*.ldf;*.linlog|데이터베이스 파일 (*.ldf)|*.ldf; |로그 파일 (*.linlog) |*.linlog||");
 	CFileDialog dlg(TRUE, _T("*.ldf"), _T(""), OFN_HIDEREADONLY, szFilter);
 
 	if (IDOK == dlg.DoModal()) {
 		CString path = dlg.GetPathName();
+		CString extend = dlg.GetFileExt();
 
 		// CString → std::string 변환
 		CT2CA pszConvertedAnsiString(path);
 		string temp(pszConvertedAnsiString);
 
-		w_LDF_parse(temp); // LIN 설정 파일 파싱
-
+		if (extend == _T("ldf")) {
+			w_LDF_parse(temp); // LIN 설정 파일 파싱
+		}
+		else if (extend == _T("linlog")) {
+			w_LINLOG_parse(temp); // 저장한 로그 파일 파싱
+		}
 	}
 }
 void CLINProjectDlg::OnCbnSelchangeSchedule()
@@ -1116,7 +1262,8 @@ void CLINProjectDlg::OnCbnSelchangeFrameid()
 	CString fName(f.name.c_str());
 	mFrameName.SetWindowTextW(fName);
 
-	frameId = f.id;
+	frameId_global = f.id;
+	frameLength_global = f.length;
 	/*CString temp;
 	temp.Format(_T("%X, %d"), f.id, selNum);
 	MessageBox(temp);*/
@@ -1168,7 +1315,7 @@ void CLINProjectDlg::OnBnClickedSend()
 			}
 		}
 
-		LIN_UpdateByteArray(hClient, hHw, 0x18, 0, 8, &sendData[0]);
+		LIN_UpdateByteArray(hClient, hHw, frameId_global, 0, frameLength_global, &sendData[0]);
 	}
 }
 
@@ -1180,15 +1327,36 @@ void CLINProjectDlg::OnLvnItemchangedSignallist(NMHDR* pNMHDR, LRESULT* pResult)
 		int index = pNMLV->iItem;
 		auto i = find(begin(graphSig), end(graphSig), index);
 
-		if (mSignalList.GetCheck(index)) {
-			graphSig.push_back(index);
-			for (int sig : graphSig) {
-				CString signal(w_Signals[sig].name.c_str());
-				mSig[sig].SetWindowTextW(signal);
+
+		if (!mSignalList.GetCheck(index) && graphSig.size() > 0) {
+			int m = find(graphSig.begin(), graphSig.end(), index) - graphSig.begin();
+			if (0 <= m && m <= 8 ) {
+				int pointCnt = signalDatas[index].position;
+				pSeries[m]->RemovePointsFromBegin(pointCnt);
 			}
-		}
-		else if (i != end(graphSig)) {
 			graphSig.erase(remove(graphSig.begin(), graphSig.end(), index), graphSig.end());
+			for (int j = m; j < 9; j++) {
+				int sig;
+				if (j >= graphSig.size()) {
+					mSig[j].SetWindowTextW(_T(""));
+					continue;
+				}
+				sig = graphSig[j];
+
+				CString signal(w_Signals[sig].name.c_str());
+				mSig[j].SetWindowTextW(signal);
+			}
+
+		}
+		else if (mSignalList.GetCheck(index)) {
+			graphSig.push_back(index);
+			int m = find(graphSig.begin(), graphSig.end(), index) - graphSig.begin();
+			int sig = graphSig[m];
+
+			CString signal(w_Signals[sig].name.c_str());
+			mSig[m].SetWindowTextW(signal);
+
+			pSeries[m]->AddPoints(signalDatas[index].timesArr, signalDatas[index].valuesArr, signalDatas[index].position);
 		}
 	}
 	*pResult = 0;
@@ -1203,19 +1371,36 @@ void CLINProjectDlg::initGraph(int index) {
 	pBottomAxis->SetAutomaticMode(CChartAxis::FullAutomatic);
 
 	pBottomAxis->SetDiscrete(false);
-	mGraph[index].ShowMouseCursor(false);
-	CChartCrossHairCursor* pCrossHair = mGraph[index].CreateCrossHairCursor();
+	//mGraph[index].ShowMouseCursor(true);
+	//CChartCrossHairCursor* pCrossHair = mGraph[index].CreateCrossHairCursor();
+	pLeftAxis->SetMarginSize(false, 80);
+
 
 	/// 라인차트 파트
-	CChartXYSerie* pSeries = nullptr;
-	pSeries = mGraph[index].CreateLineSerie();
-
-	/*double XVal[50];
-	double YVal[50];
-	for(int i = 0; i < 50; i++) {
-		XVal[i] = i * 16;
-		YVal[i] = sin(i) * 5000 + 47000;
+	pSeries[index] = mGraph[index].CreateLineSerie();
+	
+	pSeries[index]->SetColor(RGB(255, 0, 0));
+}
+BOOL CLINProjectDlg::PreTranslateMessage(MSG* pMsg)
+{
+	// TODO: 여기에 특수화된 코드를 추가 및/또는 기본 클래스를 호출합니다.
+	if (pMsg->message == WM_KEYDOWN)
+	{
+		if (pMsg->wParam == VK_RETURN) // ENTER키 눌릴 시
+			return TRUE;
+		else if (pMsg->wParam == VK_ESCAPE) // ESC키 눌릴 시
+			return TRUE;
 	}
-	pSeries->SetPoints(XVal, YVal, 50);
-	pSeries->SetColor(RGB(255, 0, 0));*/
+
+	return CDialogEx::PreTranslateMessage(pMsg);
+}
+
+void CLINProjectDlg::OnBnClickedConnect()
+{
+	wLIN_connect();
+}
+
+void CLINProjectDlg::OnBnClickedDisconnect()
+{
+	wLIN_clear();
 }

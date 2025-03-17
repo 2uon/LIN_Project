@@ -27,11 +27,16 @@ public:
 
 	int wLIN_start();
 	int wLIN_pause();
+
+	int wLIN_connect();
 	int wLIN_clear();
+	
 	void wReadData();
+
 
 	// 파싱 함수
 	int w_LDF_parse(string filePath);
+	int w_LINLOG_parse(string filePath);
 
 	void w_Parser_Config(string& line);
 	void w_Parser_Nodes(string& line);
@@ -40,6 +45,11 @@ public:
 
 	// 그래프 함수
 	void initGraph(int index);
+	void wTimer();
+	void wGraphDraw();
+
+	// 변수 초기화 함수
+	void initPharam();
 
 
 // 구현입니다.
@@ -69,7 +79,8 @@ public:
 	// 스레드
 	CWinThread* m_pThread;
 	bool m_bThreadRunning;
-
+	static UINT WINAPI wGraphDrawThread(LPVOID pParam);
+	static UINT WINAPI wTimerThread(LPVOID pParam);
 	static UINT WINAPI wReadDataThread(LPVOID pParam);
 
 	// 파일 데이터
@@ -203,7 +214,8 @@ public:
 	w_Schedules Schdules[LIN_MAX_SCHEDULES];
 
 	
-	int frameId;
+	int frameId_global;
+	int frameLength_global;
 
 	TLINRcvMsg rcvMsg = {};
 	int delay = 200;
@@ -216,8 +228,6 @@ public:
 	int schedule_position = 0;
 	BOOL onPause = false;
 	BOOL onClear = false;
-
-	vector<int> graphSig = {};
 
 	// UI 접근
 	CString progress;
@@ -248,17 +258,41 @@ public:
 	CComboBox mSchedule;
 
 	CStatic mFrameName;
-	
+
+	// 레이블
+	CEdit mSig[9];
 
 	// 그래프
 	CChartCtrl mGraph[9];
-	CChartLineSerie* pGraph[9];
+	//CChartLineSerie* pGraph[9];
 	int GRAPHS[9] = {
 		IDC_Graph1, IDC_Graph2, IDC_Graph3,
 		IDC_Graph4, IDC_Graph5, IDC_Graph6,
 		IDC_Graph7, IDC_Graph8, IDC_Graph9
 	};
+	CChartXYSerie* pSeries[9];
 
-	// 레이블
-	CStatic mSig[9];
+	// 데이터
+	vector<int> graphSig = {}; // 선택된 그래프(의 신호의 인덱스) 벡터
+
+	struct signalStartEnd {
+		int sigIndex;
+		string name;	// 신호 이름
+		int start;		// 신호의 비트 시작 인덱스
+		int end;		// 신호의 비트 끝 인덱스
+	};
+	map<int, vector<signalStartEnd>> signalEncodings; // Frame ID, 신호들
+
+	double time = 0;
+
+	// graphData로 이루어진 벡터(각 신호에 대한 데이터 저장)을 벡터로 모음.
+	struct graphData {
+		double timesArr[50000];
+		double valuesArr[50000];
+		int position = 0;
+	};
+	vector<graphData> signalDatas; // signalDatas[신호의 인덱스] 로 접근
+	virtual BOOL PreTranslateMessage(MSG* pMsg);
+	afx_msg void OnBnClickedConnect();
+	afx_msg void OnBnClickedDisconnect();
 };
