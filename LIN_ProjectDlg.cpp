@@ -256,6 +256,67 @@ void CLINProjectDlg::initPharam() {
 
 }
 
+int CLINProjectDlg::w_LINLOG_parse(string filePath) {
+	ifstream file(filePath);
+	if (!file.is_open()) {
+		return -1;
+	}
+	
+	string line;
+	string section = "";
+	graphData a = {};
+
+	while (getline(file, line)) {
+		if (line.find("<signal>") != string::npos) {
+			section = "NAME";
+			a = {};
+		}
+		else if (line.find("<position>") != string::npos) section = "POSITION";
+		else if (line.find("<time>") != string::npos) section = "TIME";
+		else if (line.find("<value>") != string::npos) section = "VALUE";
+		else if (line.find("</signal>") != string::npos) {
+			section = "";
+			signalDatas.push_back(a);
+			continue;
+		}
+
+		else if (section == "NAME") {
+			stringstream dataStream(line);
+			string log_name;
+			getline(dataStream, log_name, ',');
+			a.name = log_name;
+		}
+		else if (section == "POSITION") {
+			stringstream dataStream(line);
+			string log_position;
+			getline(dataStream, log_position, ',');
+			a.position = stoi(log_position);
+		}
+		else if (section == "TIME") {
+			for (int i = 0; i < a.position; i++) {
+				stringstream dataStream(line);
+				string log_time;
+				getline(dataStream, log_time, ',');
+				a.timesArr[i] = stoi(log_time);
+			}
+		}
+		else if (section == "VALUE") {
+			for (int i = 0; i < a.position; i++) {
+				stringstream dataStream(line);
+				string log_value;
+				getline(dataStream, log_value, ',');
+				a.valuesArr[i] = stoi(log_value);
+			}
+		}
+	}
+
+	CString FilePath(filePath.c_str());
+	mFileName.SetWindowTextW(FilePath);
+	MessageBox(FilePath);
+
+	file.close();
+}
+
 int CLINProjectDlg::w_LDF_parse(string filePath) {
 	ifstream file(filePath);
 	if (!file.is_open()) {
@@ -580,7 +641,7 @@ int CLINProjectDlg::w_LDF_parse(string filePath) {
 				}
 			}
 		}
-		else if (section == "Schedule_tables") { /////////////////////////////////
+		else if (section == "Schedule_tables") {
 			stringstream ss(line);
 			string name;
 			getline(ss, name, '{');
@@ -915,10 +976,6 @@ void CLINProjectDlg::w_Parser_Nodes(string& line) {
 		}
 	}
 
-}
-
-int CLINProjectDlg::w_LINLOG_parse(string filePath) {
-	
 }
 
 void CLINProjectDlg::w_Parser_Signals(string& line) {
@@ -1481,16 +1538,17 @@ void CLINProjectDlg::OnBnClickedSave()
 	log_file.open(logFileName);
 
 	for (graphData sig : signalDatas) {
-		log_file << "<signal>" << sig.name << "\n<time>";
+		log_file << "<signal>\n" << sig.name << "\n";
+		log_file << "<position>\n" << sig.position << "\n";
+		log_file << "<time>\n";
 		for (int i = 0; i < sig.position; i++) {
-			log_file << sig.timesArr[i] << ",";
+			log_file << sig.timesArr[i] << "\n";
 		}
-		log_file << "\n<value>";
+		log_file << "<value>\n";
 		for (int i = 0; i < sig.position; i++) {
-			log_file << sig.valuesArr[i] << ",";
+			log_file << sig.valuesArr[i] << "\n";
 		}
-		log_file << "\n<position>" << sig.position;
-		log_file << "\n";
+		log_file << "</signal>\n";
 	}
 
 	log_file << endl;

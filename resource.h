@@ -11,6 +11,9 @@
 #define IDC_Pause                       1001
 #define IDC_Stop                        1002
 #define IDC_SEND                        1003
+#define IDC_Connect                     1004
+#define IDC_Stop2                       1005
+#define IDC_Save                        1005
 #define IDC_Progress                    1006
 #define IDC_ErrCode                     1007
 #define IDC_TX                          1008
@@ -18,6 +21,7 @@
 #define IDC_RX                          1009
 #define IDC_Tx0                         1010
 #define IDC_COMBO1                      1011
+#define IDC_Disconnect                  1011
 #define IDC_Tx2                         1012
 #define IDC_Tx3                         1013
 #define IDC_Tx4                         1014
@@ -37,17 +41,29 @@
 #define IDC_SignalList                  1033
 #define IDC_FrameName                   1035
 #define IDC_CHECK1                      1036
+#define IDC_CHECK2                      1037
+#define IDC_CHECK3                      1038
 #define IDC_LIST2                       1039
 #define IDC_Graphs                      1039
-#define IDC_Graph1                      1040
-#define IDC_Graph2                      1041
-#define IDC_Graph3                      1042
-#define IDC_Graph4                      1043
-#define IDC_Graph5                      1044
-#define IDC_Graph6                      1045
-#define IDC_Graph7                      1046
-#define IDC_Graph8                      1047
-#define IDC_Graph9                      1048
+#define IDC_Graph1                      1049
+#define IDC_Graph2                      1050
+#define IDC_Graph3                      1051
+#define IDC_Graph4                      1052
+#define IDC_Sig2                        1062
+#define IDC_Sig1                        1063
+#define IDC_Sig4                        1064
+#define IDC_Graph5                      1065
+#define IDC_Graph6                      1066
+#define IDC_Graph7                      1067
+#define IDC_Graph8                      1068
+#define IDC_Graph9                      1069
+#define IDC_Sig3                        1070
+#define IDC_Sig6                        1071
+#define IDC_Sig5                        1072
+#define IDC_Sig8                        1073
+#define IDC_Sig7                        1074
+#define IDC_Sig9                        1075
+#define IDC_BUTTON1                     1078
 
 // Next default values for new objects
 // 
@@ -55,7 +71,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        131
 #define _APS_NEXT_COMMAND_VALUE         32771
-#define _APS_NEXT_CONTROL_VALUE         1049
+#define _APS_NEXT_CONTROL_VALUE         1089
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
