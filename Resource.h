@@ -12,6 +12,8 @@
 #define IDC_Stop                        1002
 #define IDC_SEND                        1003
 #define IDC_Connect                     1004
+#define IDC_Stop2                       1005
+#define IDC_Save                        1005
 #define IDC_Progress                    1006
 #define IDC_ErrCode                     1007
 #define IDC_TX                          1008
@@ -39,7 +41,6 @@
 #define IDC_SignalList                  1033
 #define IDC_FrameName                   1035
 #define IDC_CHECK1                      1036
-#define IDC_Save                        1036
 #define IDC_CHECK2                      1037
 #define IDC_CHECK3                      1038
 #define IDC_LIST2                       1039
@@ -63,7 +64,6 @@
 #define IDC_Sig7                        1074
 #define IDC_Sig9                        1075
 #define IDC_BUTTON1                     1078
-#define IDC_RADIO1                      1088
 
 // Next default values for new objects
 // 

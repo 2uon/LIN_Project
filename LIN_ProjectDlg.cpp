@@ -6,9 +6,7 @@
 #include "framework.h"
 #include "LIN_ProjectDlg.h"
 #include "afxdialogex.h"
-#include <fstream>
-#include <sstream>
-#include <d2d1.h>
+#include <ctime>
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -96,7 +94,6 @@ void CLINProjectDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_Sig7, mSig[6]);
 	DDX_Control(pDX, IDC_Sig8, mSig[7]);
 	DDX_Control(pDX, IDC_Sig9, mSig[8]);
-	DDX_Control(pDX, IDC_Save, mSave);
 }
 
 BEGIN_MESSAGE_MAP(CLINProjectDlg, CDialogEx)
@@ -115,6 +112,7 @@ BEGIN_MESSAGE_MAP(CLINProjectDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_Connect, &CLINProjectDlg::OnBnClickedConnect)
 	ON_BN_CLICKED(IDC_Disconnect, &CLINProjectDlg::OnBnClickedDisconnect)
 	ON_BN_CLICKED(IDC_Save, &CLINProjectDlg::OnBnClickedSave)
+	ON_WM_CLOSE()
 END_MESSAGE_MAP()
 
 
@@ -835,6 +833,7 @@ int CLINProjectDlg::w_LDF_parse(string filePath) {
 
 			// 데이터 틀 추가
 			graphData a = {};
+			a.name = d.name;
 			a.timesArr[a.position] = 0;
 			a.valuesArr[a.position] = 0;
 			a.position++;
@@ -919,7 +918,7 @@ void CLINProjectDlg::w_Parser_Nodes(string& line) {
 }
 
 int CLINProjectDlg::w_LINLOG_parse(string filePath) {
-	MessageBox(_T("txt"));
+	
 }
 
 void CLINProjectDlg::w_Parser_Signals(string& line) {
@@ -1131,8 +1130,8 @@ UINT CLINProjectDlg::wTimerThread(LPVOID pParam) {
 
 void CLINProjectDlg::wTimer() {
 	while (m_bThreadRunning) {
-		time += 0.1;
-		Sleep(100);
+		time += 0.01;
+		Sleep(10);
 	}
 }
 
@@ -1150,7 +1149,6 @@ void CLINProjectDlg::wReadData() {
 	LIN_SetClientFilter(hClient, hHw, Filter);
 
 	while (m_bThreadRunning) {
-		Sleep(1);
 		// 읽기 정지 (정지, 연결 해제)
 		if (onPause) {
 			break;
@@ -1174,6 +1172,7 @@ void CLINProjectDlg::wReadData() {
 				errCode.Format(_T("%d"), result);
 				mErrCode.SetWindowTextW(errCode);
 
+				double sigTime = time;
 				// Trace 값
 				int nItemNum = find(FrameIDs.begin(), FrameIDs.end(), (rcvMsg.FrameId & 0x3F)) - FrameIDs.begin();
 				CString frameID;
@@ -1207,7 +1206,7 @@ void CLINProjectDlg::wReadData() {
 
 					
 					graphData a = {};
-					a.timesArr[signalDatas[sig.sigIndex].position] = time;
+					a.timesArr[signalDatas[sig.sigIndex].position] = sigTime;
 					a.valuesArr[signalDatas[sig.sigIndex].position] = value;
 					signalDatas[sig.sigIndex].position++;
 					signalDatas[sig.sigIndex] = a;
@@ -1218,14 +1217,6 @@ void CLINProjectDlg::wReadData() {
 		}
 	}
 	return;
-}
-
-void CLINProjectDlg::wSaveData() {
-	////////////////////
-	if (onPause) {
-	}
-	if (onClear) {
-	}
 }
 
 // 신호 파싱
@@ -1291,11 +1282,13 @@ void CLINProjectDlg::OnBnClickedOpenlog()
 
 	if (IDOK == dlg.DoModal()) {
 		CString path = dlg.GetPathName();
+		CString fileName = dlg.GetFileName();
 		CString extend = dlg.GetFileExt();
 
-		// CString → std::string 변환
-		CT2CA pszConvertedAnsiString(path);
-		string temp(pszConvertedAnsiString);
+		string temp = string(CT2CA(path));
+		openFileName = string(CT2CA(fileName));
+		openFileExt = string(CT2CA(extend));
+		
 
 		if (extend == _T("ldf")) {
 			w_LDF_parse(temp); // LIN 설정 파일 파싱
@@ -1471,13 +1464,46 @@ void CLINProjectDlg::OnBnClickedDisconnect()
 
 void CLINProjectDlg::OnBnClickedSave()
 {
-	//////// .linlog 파일 만들고 기본 세팅 저장
-	if (mSave.GetCheck()) {
-		// Save 체크 했을 때 구현
-		MessageBox(_T("a"));
+	if (openFileName == "" || openFileExt == "linlog") {
+		MessageBox(_T("Select LDF File!"));
+		return;
 	}
-	else {
-		// Save 체크 해제 했을 때 구현
+	string logFileName;
+	time_t now = std::time(nullptr);
+	tm tm1;
 
+	localtime_s(&tm1, &now);
+
+	logFileName = "log" + to_string(tm1.tm_year + 1900) + "_" + to_string(tm1.tm_mon + 1) + "_" 
+		+ to_string(tm1.tm_mday) + "_" + to_string(tm1.tm_hour) + "_" + to_string(tm1.tm_min) + "_" 
+		+ to_string(tm1.tm_sec) + ".linlog";
+
+	log_file.open(logFileName);
+
+	for (graphData sig : signalDatas) {
+		log_file << "<signal>" << sig.name << "\n<time>";
+		for (int i = 0; i < sig.position; i++) {
+			log_file << sig.timesArr[i] << ",";
+		}
+		log_file << "\n<value>";
+		for (int i = 0; i < sig.position; i++) {
+			log_file << sig.valuesArr[i] << ",";
+		}
+		log_file << "\n<position>" << sig.position;
+		log_file << "\n";
 	}
+
+	log_file << endl;
+	log_file.close();
+
+	CString temp(logFileName.c_str());
+	MessageBox(temp);
+}
+
+void CLINProjectDlg::OnClose()
+{
+	// TODO: 여기에 메시지 처리기 코드를 추가 및/또는 기본값을 호출합니다.
+	wLIN_clear();
+
+	CDialogEx::OnClose();
 }

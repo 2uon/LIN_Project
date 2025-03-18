@@ -32,8 +32,6 @@ public:
 	int wLIN_clear();
 	
 	void wReadData();
-	void wSaveData();
-
 
 	// 파싱 함수
 	int w_LDF_parse(string filePath);
@@ -76,6 +74,10 @@ public:
 
 	afx_msg void OnLvnItemchangedSignallist(NMHDR* pNMHDR, LRESULT* pResult);
 
+	// 파일
+	string openFileName;
+	string openFileExt;
+	ofstream log_file;
 
 	// 스레드
 	CWinThread* m_pThread;
@@ -288,6 +290,7 @@ public:
 
 	// graphData로 이루어진 벡터(각 신호에 대한 데이터 저장)을 벡터로 모음.
 	struct graphData {
+		string name;
 		double timesArr[50000];
 		double valuesArr[50000];
 		int position = 0;
@@ -297,5 +300,5 @@ public:
 	afx_msg void OnBnClickedConnect();
 	afx_msg void OnBnClickedDisconnect();
 	afx_msg void OnBnClickedSave();
-	CButton mSave;
+	afx_msg void OnClose();
 };
