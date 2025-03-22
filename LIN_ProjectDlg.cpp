@@ -31,6 +31,7 @@ public:
 // 구현입니다.
 protected:
 	DECLARE_MESSAGE_MAP()
+public:
 };
 
 CAboutDlg::CAboutDlg() : CDialogEx(IDD_ABOUTBOX)
@@ -113,6 +114,7 @@ BEGIN_MESSAGE_MAP(CLINProjectDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_Disconnect, &CLINProjectDlg::OnBnClickedDisconnect)
 	ON_BN_CLICKED(IDC_Save, &CLINProjectDlg::OnBnClickedSave)
 	ON_WM_CLOSE()
+	ON_CBN_SELCHANGE(IDC_FrameName, &CLINProjectDlg::OnCbnSelchangeFramename)
 END_MESSAGE_MAP()
 
 
@@ -153,9 +155,10 @@ BOOL CLINProjectDlg::OnInitDialog()
 	mTraceList.GetWindowRect(&rtTrace);
 	mTraceList.SetExtendedStyle(LVS_EX_GRIDLINES | LVS_EX_FULLROWSELECT | LVS_EX_DOUBLEBUFFER);
 
-	mTraceList.InsertColumn(0, TEXT("Frame ID"), LVCFMT_LEFT, rtTrace.Width() * 0.25);
-	mTraceList.InsertColumn(1, TEXT("Frame Data"), LVCFMT_LEFT, rtTrace.Width() * 0.5);
-	mTraceList.InsertColumn(2, TEXT("Error Flags"), LVCFMT_LEFT, rtTrace.Width() * 0.25);
+	mTraceList.InsertColumn(0, TEXT("Frame ID"), LVCFMT_LEFT, rtTrace.Width() * 0.15);
+	mTraceList.InsertColumn(1, TEXT("Frame Name"), LVCFMT_LEFT, rtTrace.Width() * 0.25);
+	mTraceList.InsertColumn(2, TEXT("Frame Data"), LVCFMT_LEFT, rtTrace.Width() * 0.45);
+	mTraceList.InsertColumn(3, TEXT("Error Flags"), LVCFMT_LEFT, rtTrace.Width() * 0.15);
 
 	CRect rtSignal;
 	mSignalList.GetWindowRect(&rtSignal);
@@ -222,24 +225,28 @@ HCURSOR CLINProjectDlg::OnQueryDragIcon()
 
 void CLINProjectDlg::initPharam() {
 	// 초기화
-	w_Signals = {};
-	w_DiagnosticSignals = {};
-	w_Frames = {};
-	w_DiagnosticFrames = {};
-	w_NodeAttributes = {};
-	w_ScheduleTables = {};
-	w_SignalEncodings = {};
-	Frames = {};
-	FrameNames = {};
-	FrameIDs = {};
+	w_Signals.clear();
+	w_DiagnosticSignals.clear();
+	w_Frames.clear();
+	w_DiagnosticFrames.clear();
+	w_NodeAttributes.clear();
+	w_ScheduleTables.clear();
+	w_SignalEncodings.clear();
+	Frames.clear();
+	FrameNames.clear();
+	FrameIDs.clear();
 	schedulesSize = 0;
 	schedule_position = 0;
-	graphSig = {};
+	graphSig.clear();
+	signalEncodings.clear();
+	logDatas.clear();
+	signalDatas.clear();
 
 	// 위젯 초기화
 	mSchedule.ResetContent();
 	mFrameId.ResetContent();
-	mFrameName.SetWindowTextW(_T("- Frame Name -"));
+	mFrameName.ResetContent();
+	mTraceList.DeleteAllItems();
 	mTraceList.DeleteAllItems();
 	mSignalList.DeleteAllItems();
 
@@ -262,53 +269,85 @@ int CLINProjectDlg::w_LINLOG_parse(string filePath) {
 		return -1;
 	}
 	
+	int id;
+
 	string line;
 	string section = "";
-	graphData a = {};
-
 	while (getline(file, line)) {
-		if (line.find("<signal>") != string::npos) {
-			section = "NAME";
-			a = {};
-		}
-		else if (line.find("<position>") != string::npos) section = "POSITION";
-		else if (line.find("<time>") != string::npos) section = "TIME";
-		else if (line.find("<value>") != string::npos) section = "VALUE";
-		else if (line.find("</signal>") != string::npos) {
-			section = "";
-			signalDatas.push_back(a);
-			continue;
-		}
 
-		else if (section == "NAME") {
-			stringstream dataStream(line);
-			string log_name;
-			getline(dataStream, log_name, ',');
-			a.name = log_name;
+		if (line.find("</Frame>") != string::npos || line.find("</Signal Encodings>") != string::npos
+			|| line.find("</Log Datas>") != string::npos) {
+			section = "";
 		}
-		else if (section == "POSITION") {
-			stringstream dataStream(line);
-			string log_position;
-			getline(dataStream, log_position, ',');
-			a.position = stoi(log_position);
+		else if (line.find("<Frame>") != string::npos) {
+			section = "FRAME";
+			getline(file, line);
+			id = stoi(line);
+			FrameIDs.push_back(id);
 		}
-		else if (section == "TIME") {
-			for (int i = 0; i < a.position; i++) {
-				stringstream dataStream(line);
-				string log_time;
-				getline(dataStream, log_time, ',');
-				a.timesArr[i] = stoi(log_time);
-			}
+		else if (line.find("<Signal Encodings>") != string::npos) section = "SIGNAL";
+		else if (line.find("<Log Datas>") != string::npos) section = "LOG";
+
+		else if (section == "SIGNAL") {
+			line.erase(remove(line.begin(), line.end(), ' '), line.end());
+			stringstream ss(line);
+			string sigIndex, sigName, sigStart, sigEnd;
+			getline(ss, sigIndex, ',');
+			getline(ss, sigName, ',');
+			getline(ss, sigStart, ',');
+			getline(ss, sigEnd, ',');
+			
+			signalEncodings[id].push_back(signalStartEnd{ stoi(sigIndex),sigName, stoi(sigStart), stoi(sigEnd) });
 		}
-		else if (section == "VALUE") {
-			for (int i = 0; i < a.position; i++) {
-				stringstream dataStream(line);
-				string log_value;
-				getline(dataStream, log_value, ',');
-				a.valuesArr[i] = stoi(log_value);
+		else if (section == "LOG") {
+			line.erase(remove(line.begin(), line.end(), ' '), line.end());
+			stringstream ss(line);
+			string s;
+			while (getline(ss, s, ';')) {
+				stringstream ss_temp(s);
+				string data, time;
+				getline(ss_temp, data, ',');
+				getline(ss_temp, time, ',');
+
+				if (data == " ") break;
+				logDatas[id].push_back(logData{ stoi(data), stod(time) });
 			}
 		}
 	}
+
+	for (int id : FrameIDs) {
+		for (signalStartEnd sig : signalEncodings[id]) {
+			graphData a = {};
+			a.name = sig.name;
+			a.timesArr[a.position] = 0;
+			a.valuesArr[a.position] = 0;
+			a.position++;
+			signalDatas.push_back(a);
+
+			CString temp(sig.name.c_str());
+			mSignalList.InsertItem(sig.sigIndex, temp);
+		}
+	}
+
+	for (int id : FrameIDs) {
+		for (logData log : logDatas[id]) {
+			int Data = log.data;
+			for (signalStartEnd sig : signalEncodings[id]) {
+				double value;
+
+				int Data1 = Data >> (64 - sig.end);
+				int Data2 = Data >> (64 - sig.start);
+				Data2 <<= (sig.end - sig.start);
+
+				value = (Data1 - Data2);
+
+				signalDatas[sig.sigIndex].timesArr[signalDatas[sig.sigIndex].position] = log.time;
+				signalDatas[sig.sigIndex].valuesArr[signalDatas[sig.sigIndex].position] = value;
+				signalDatas[sig.sigIndex].position++;
+			}
+		}
+	}
+
 
 	CString FilePath(filePath.c_str());
 	mFileName.SetWindowTextW(FilePath);
@@ -1162,18 +1201,19 @@ UINT CLINProjectDlg::wGraphDrawThread(LPVOID pParam) {
 }
 
 void CLINProjectDlg::wGraphDraw() {
+	int position = 0;
 	while (m_bThreadRunning) {
-		for (int i = 0; i < graphSig.size(); i++) {
-			int index = graphSig[i];
-			int pointCnt = signalDatas[index].position;
-			pSeries[i]->RemovePointsFromBegin(pointCnt);
-			pSeries[i]->AddPoints(
-				signalDatas[index].timesArr, 
-				signalDatas[index].valuesArr, 
-				signalDatas[index].position
-			);
+		while (position < signalDatas[0].position) {
+			for (int i = 0; i < graphSig.size(); i++) {
+				int index = graphSig[i];
+				pSeries[i]->AddPoint(
+					signalDatas[index].timesArr[position],
+					signalDatas[index].valuesArr[position]
+				);
+			}
+			position++;
 		}
-		Sleep(1000);
+		Sleep(10);
 	}
 }
 
@@ -1232,9 +1272,8 @@ void CLINProjectDlg::wReadData() {
 				double sigTime = time;
 				// Trace 값
 				int nItemNum = find(FrameIDs.begin(), FrameIDs.end(), (rcvMsg.FrameId & 0x3F)) - FrameIDs.begin();
-				CString frameID;
-				CString data;
-				CString flag;
+
+				CString frameID, frameNAME(FrameNames[nItemNum].c_str()), data, flag;
 
 				frameID.Format(_T("0x%X"), (rcvMsg.FrameId & 0x3F));
 				data.Format(_T("%X %X %X %X %X %X %X %X"), rcvMsg.Data[0], rcvMsg.Data[1], rcvMsg.Data[2], rcvMsg.Data[3],
@@ -1242,8 +1281,9 @@ void CLINProjectDlg::wReadData() {
 				flag.Format(_T("%X"), rcvMsg.ErrorFlags);
 
 				mTraceList.SetItemText(nItemNum, 0, frameID);
-				mTraceList.SetItemText(nItemNum, 1, data);
-				mTraceList.SetItemText(nItemNum, 2, flag);
+				mTraceList.SetItemText(nItemNum, 1, frameNAME);
+				mTraceList.SetItemText(nItemNum, 2, data);
+				mTraceList.SetItemText(nItemNum, 3, flag);
 
 				int Data = 0;
 				int d8 = 1;
@@ -1251,22 +1291,20 @@ void CLINProjectDlg::wReadData() {
 					Data += rcvMsg.Data[j] * d8;
 					d8 *= 8;
 				}
+				logDatas[(rcvMsg.FrameId & 0x3F)].push_back(logData{ Data, sigTime});
 
-				for (signalStartEnd sig : signalEncodings[(rcvMsg.FrameId & 0x3F)]) {
+				for (signalStartEnd sig: signalEncodings[(rcvMsg.FrameId & 0x3F)]) {
 					double value;
 
 					int Data1 = Data >> ((rcvMsg.Length * 8) - sig.end);
 					int Data2 = Data >> ((rcvMsg.Length * 8) - sig.start);
 					Data2 <<= (sig.end - sig.start);
 
-					value = Data1 - Data2;
+					value = (Data1 - Data2);
 
-					
-					graphData a = {};
-					a.timesArr[signalDatas[sig.sigIndex].position] = sigTime;
-					a.valuesArr[signalDatas[sig.sigIndex].position] = value;
+					signalDatas[sig.sigIndex].timesArr[signalDatas[sig.sigIndex].position] = sigTime;
+					signalDatas[sig.sigIndex].valuesArr[signalDatas[sig.sigIndex].position] = value;
 					signalDatas[sig.sigIndex].position++;
-					signalDatas[sig.sigIndex] = a;
 				}
 				
 
@@ -1359,12 +1397,18 @@ void CLINProjectDlg::OnCbnSelchangeSchedule()
 {
 	int selNum = mSchedule.GetCurSel();
 	w_Schedules s = Schdules[selNum];
+	mFrameId.ResetContent();
+	mFrameName.ResetContent();
 
 	for (int i = 0; i < s.size; i++) {
 		CString frameID;
+		CString frameNAME(FrameNames[find(FrameIDs.begin(), FrameIDs.end(), (s.Schedule[i].FrameId[0])) - FrameIDs.begin()].c_str());
 		frameID.Format(_T("0x%X"), s.Schedule[i].FrameId[0]);
 		mFrameId.AddString(frameID);
 		mTraceList.InsertItem(i, frameID);
+		
+		mFrameName.AddString(frameNAME);
+		mTraceList.SetItemText(i,1,frameNAME);
 	}
 }
 
@@ -1373,14 +1417,21 @@ void CLINProjectDlg::OnCbnSelchangeFrameid()
 	int selNum = mFrameId.GetCurSel();
 	w_Frame f = w_Frames[selNum];
 
-	CString fName(f.name.c_str());
-	mFrameName.SetWindowTextW(fName);
+	mFrameName.SetCurSel(selNum);
 
 	frameId_global = f.id;
 	frameLength_global = f.length;
-	/*CString temp;
-	temp.Format(_T("%X, %d"), f.id, selNum);
-	MessageBox(temp);*/
+}
+
+void CLINProjectDlg::OnCbnSelchangeFramename()
+{
+	int selNum = mFrameName.GetCurSel();
+	w_Frame f = w_Frames[selNum];
+
+	mFrameId.SetCurSel(selNum);
+
+	frameId_global = f.id;
+	frameLength_global = f.length;
 }
 
 void CLINProjectDlg::OnBnClickedSend()
@@ -1444,33 +1495,40 @@ void CLINProjectDlg::OnLvnItemchangedSignallist(NMHDR* pNMHDR, LRESULT* pResult)
 
 		if (!mSignalList.GetCheck(index) && graphSig.size() > 0) {
 			int m = find(graphSig.begin(), graphSig.end(), index) - graphSig.begin();
-			if (0 <= m && m <= 8 ) {
-				int pointCnt = signalDatas[index].position;
-				pSeries[m]->RemovePointsFromBegin(pointCnt);
-			}
+
 			graphSig.erase(remove(graphSig.begin(), graphSig.end(), index), graphSig.end());
-			for (int j = m; j < 9; j++) {
+			for (int j = m; j < graphSig.size()+1; j++) {
 				int sig;
+				int pointCnt = signalDatas[j].position;
+				pSeries[j]->RemovePointsFromBegin(pointCnt);
 				if (j >= graphSig.size()) {
 					mSig[j].SetWindowTextW(_T(""));
 					continue;
 				}
 				sig = graphSig[j];
 
-				CString signal(w_Signals[sig].name.c_str());
+				CString signal(signalDatas[sig].name.c_str());
 				mSig[j].SetWindowTextW(signal);
 			}
 
+			for (int j = m; j < graphSig.size(); j++) {
+				pSeries[j]->AddPoints(&signalDatas[graphSig[j]].timesArr[0], &signalDatas[graphSig[j]].valuesArr[0], signalDatas[graphSig[j]].position);
+			}
+
 		}
-		else if (mSignalList.GetCheck(index)) {
+		else if (mSignalList.GetCheck(index) && graphSig.size() < 9) {
 			graphSig.push_back(index);
 			int m = find(graphSig.begin(), graphSig.end(), index) - graphSig.begin();
 			int sig = graphSig[m];
 
-			CString signal(w_Signals[sig].name.c_str());
+			CString signal(signalDatas[sig].name.c_str());
 			mSig[m].SetWindowTextW(signal);
 
-			pSeries[m]->AddPoints(signalDatas[index].timesArr, signalDatas[index].valuesArr, signalDatas[index].position);
+			pSeries[m]->AddPoints(&signalDatas[index].timesArr[0], &signalDatas[index].valuesArr[0], signalDatas[index].position);
+		}
+		else if (graphSig.size() == 9) {
+			MessageBox(_T("Full Graph Size."));
+			mSignalList.SetCheck(index, false);
 		}
 	}
 	*pResult = 0;
@@ -1537,18 +1595,24 @@ void CLINProjectDlg::OnBnClickedSave()
 
 	log_file.open(logFileName);
 
-	for (graphData sig : signalDatas) {
-		log_file << "<signal>\n" << sig.name << "\n";
-		log_file << "<position>\n" << sig.position << "\n";
-		log_file << "<time>\n";
-		for (int i = 0; i < sig.position; i++) {
-			log_file << sig.timesArr[i] << "\n";
+	// 로그 작성
+	for (int id : FrameIDs) {
+		log_file << "<Frame>\n" << id << "\n<Signal Encodings>\n";
+		for (signalStartEnd sig : signalEncodings[id]) {
+			log_file << sig.sigIndex << ", " << sig.name << ", " << sig.start << ", " << sig.end << "\n";
 		}
-		log_file << "<value>\n";
-		for (int i = 0; i < sig.position; i++) {
-			log_file << sig.valuesArr[i] << "\n";
+		int logCnt = 0;
+		log_file << "</Signal Encodings>\n<Log Datas>\n";
+		for (logData log : logDatas[id]) {
+			log_file << log.data << ", " << log.time << "; ";
+			if (logCnt++ % 20 == 0) {
+				log_file << "\n";
+			}
 		}
-		log_file << "</signal>\n";
+		if (logCnt % 20 != 0) {
+			log_file << "\n";
+		}
+		log_file << "</Log Datas>\n</Frame>\n";
 	}
 
 	log_file << endl;
@@ -1565,3 +1629,4 @@ void CLINProjectDlg::OnClose()
 
 	CDialogEx::OnClose();
 }
+

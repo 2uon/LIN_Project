@@ -68,11 +68,14 @@ public:
 	afx_msg void OnBnClickedStart();
 	afx_msg void OnBnClickedSend();
 	afx_msg void OnBnClickedOpenlog();
-
 	afx_msg void OnCbnSelchangeSchedule();
 	afx_msg void OnCbnSelchangeFrameid();
-
 	afx_msg void OnLvnItemchangedSignallist(NMHDR* pNMHDR, LRESULT* pResult);
+	virtual BOOL PreTranslateMessage(MSG* pMsg);
+	afx_msg void OnBnClickedConnect();
+	afx_msg void OnBnClickedDisconnect();
+	afx_msg void OnBnClickedSave();
+	afx_msg void OnClose();
 
 	// 파일
 	string openFileName;
@@ -258,10 +261,8 @@ public:
 	CButton mCheckSig;
 
 	CComboBox mFrameId;
+	CComboBox mFrameName;
 	CComboBox mSchedule;
-
-	CStatic mFrameName;
-
 	// 레이블
 	CEdit mSig[9];
 
@@ -284,7 +285,13 @@ public:
 		int start;		// 신호의 비트 시작 인덱스
 		int end;		// 신호의 비트 끝 인덱스
 	};
-	map<int, vector<signalStartEnd>> signalEncodings; // Frame ID, 신호들
+	map<int, vector<signalStartEnd>> signalEncodings; // Frame ID, 신호 구조
+
+	struct logData {
+		int data;
+		double time;
+	};
+	map<int, vector<logData>> logDatas; // 데이터(8byte->int)
 
 	double time = 0;
 
@@ -296,9 +303,5 @@ public:
 		int position = 0;
 	};
 	vector<graphData> signalDatas; // signalDatas[신호의 인덱스] 로 접근
-	virtual BOOL PreTranslateMessage(MSG* pMsg);
-	afx_msg void OnBnClickedConnect();
-	afx_msg void OnBnClickedDisconnect();
-	afx_msg void OnBnClickedSave();
-	afx_msg void OnClose();
+	afx_msg void OnCbnSelchangeFramename();
 };
