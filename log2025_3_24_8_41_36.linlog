@@ -1,0 +1,112 @@
+<Frame>
+24
+<Signal Encodings>
+0, C_3ExvT2_PosReq, 0, 16
+1, C_3ExvT2_MoveEnable, 16, 17
+2, C_3ExvT2_Initial, 24, 26
+3, C_3ExvT2_CalModEnable, 17, 18
+4, C_3ExvT2_CalModeStateReq, 18, 22
+</Signal Encodings>
+<Log Datas>
+</Log Datas>
+</Frame>
+<Frame>
+25
+<Signal Encodings>
+5, _3Exv_M2_C_InitialSta, 2, 4
+6, _3Exv_M2_C_Running, 4, 5
+7, _3Exv_M2_C_Fault, 8, 12
+8, _3Exv_M2_C_Voltage, 12, 14
+9, _3Exv_M2_C_OverTemp, 14, 16
+10, _3Exv_M2_C_PositionFB, 16, 32
+11, _3Exv_M2_C_CalDoneFed, 1, 2
+12, _3Exv_M2_C_CalStateFed, 32, 36
+13, _3Exv_M2_C_HW_VER, 48, 56
+14, _3Exv_M2_C_SW_VER, 56, 64
+15, _3Exv_T2_C_Minor_SW, 40, 48
+</Signal Encodings>
+<Log Datas>
+</Log Datas>
+</Frame>
+<Frame>
+34
+<Signal Encodings>
+16, C_ExvH_PosReq, 0, 16
+17, C_ExvH_MoveEnable, 16, 17
+18, C_ExvH_Initial, 24, 26
+19, C_ExvH_CalModEnable, 17, 18
+20, C_ExvH_CalModeStateReq, 18, 22
+</Signal Encodings>
+<Log Datas>
+</Log Datas>
+</Frame>
+<Frame>
+35
+<Signal Encodings>
+21, ExvH_C_InitialSta, 2, 4
+22, ExvH_C_Running, 4, 5
+23, ExvH_C_Fault, 8, 12
+24, ExvH_C_Voltage, 12, 14
+25, ExvH_C_OverTemp, 14, 16
+26, ExvH_C_PositionFB, 16, 32
+27, ExvH_C_CalDoneFed, 1, 2
+28, ExvH_C_CalStateFed, 32, 36
+29, ExvH_C_HW_VER, 48, 56
+30, ExvH_C_SW_VER, 56, 64
+31, ExvH_C_Minor_SW, 40, 48
+</Signal Encodings>
+<Log Datas>
+</Log Datas>
+</Frame>
+<Frame>
+38
+<Signal Encodings>
+32, C_3way_PosReq, 0, 2
+33, C_3way1_MoveEnable, 16, 17
+34, C_3way1_Initial, 24, 26
+</Signal Encodings>
+<Log Datas>
+</Log Datas>
+</Frame>
+<Frame>
+39
+<Signal Encodings>
+35, _3way1_C_InitialSta, 2, 4
+36, _3way1_C_Running, 4, 5
+37, _3way1_C_Fault, 8, 12
+38, _3way1_C_Voltage, 12, 14
+39, _3way1_C_OverTemp, 14, 16
+40, _3way1_C_PositionFB, 16, 18
+41, _3way1_C_HW_VER, 48, 56
+42, _3way1_C_SW_VER, 56, 64
+43, _3way1_C_Minor_SW, 40, 48
+</Signal Encodings>
+<Log Datas>
+</Log Datas>
+</Frame>
+<Frame>
+40
+<Signal Encodings>
+44, C_3way2_PosReq, 0, 2
+45, C_3way2_MoveEnable, 16, 17
+46, C_3way2_Initial, 24, 32
+</Signal Encodings>
+<Log Datas>
+</Log Datas>
+</Frame>
+<Frame>
+41
+<Signal Encodings>
+47, C_3way2_C_PositionFB, 16, 18
+48, C_3way2_Datc_Running, 4, 5
+49, C_3way2_C_InitialSta, 2, 4
+50, C_3way2_C_Fault, 8, 12
+51, C_3way2_C_Voltage, 12, 14
+52, C_3way2_C_OverTemp, 14, 16
+53, C_3way2_C_HW_Ver, 48, 56
+54, C_3way2_C_SW_Ver, 56, 64
+</Signal Encodings>
+<Log Datas>
+</Log Datas>
+</Frame>
+

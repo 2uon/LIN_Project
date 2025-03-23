@@ -46,6 +46,7 @@ public:
 	void initGraph(int index);
 	void wTimer();
 	void wGraphDraw();
+	void wGetData();
 
 	// 변수 초기화 함수
 	void initPharam();
@@ -83,8 +84,9 @@ public:
 	ofstream log_file;
 
 	// 스레드
-	CWinThread* m_pThread;
+	CWinThread* m_pThread1, *m_pThread2, *m_pThread3, *m_pThread4;
 	bool m_bThreadRunning;
+	static UINT WINAPI wGetDataThread(LPVOID pParam);
 	static UINT WINAPI wGraphDrawThread(LPVOID pParam);
 	static UINT WINAPI wTimerThread(LPVOID pParam);
 	static UINT WINAPI wReadDataThread(LPVOID pParam);
@@ -252,6 +254,8 @@ public:
 	CEdit mTx5;
 	CEdit mTx6;
 	CEdit mTx7;
+	CEdit* mTx[8] = { &mTx0, &mTx1, &mTx2, &mTx3, &mTx4, &mTx5, &mTx6, &mTx7 };
+
 	CEdit mDelay;
 	CEdit mFileName;
 
@@ -288,7 +292,7 @@ public:
 	map<int, vector<signalStartEnd>> signalEncodings; // Frame ID, 신호 구조
 
 	struct logData {
-		int data;
+		ULONG64 data;
 		double time;
 	};
 	map<int, vector<logData>> logDatas; // 데이터(8byte->int)
@@ -302,6 +306,16 @@ public:
 		double valuesArr[50000];
 		int position = 0;
 	};
-	vector<graphData> signalDatas; // signalDatas[신호의 인덱스] 로 접근
+	vector<graphData> graphDatas;
+
+	struct graphSetting {
+		int id;
+		int start;
+		int end;
+	};
+	vector<graphSetting> gSettings;
 	afx_msg void OnCbnSelchangeFramename();
+	CListCtrl mSignalDataList;
+	CButton mHex;
+	afx_msg void OnBnClickedHex();
 };

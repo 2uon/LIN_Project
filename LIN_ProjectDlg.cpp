@@ -52,7 +52,7 @@ END_MESSAGE_MAP()
 
 
 CLINProjectDlg::CLINProjectDlg(CWnd* pParent /*=nullptr*/)
-	: CDialogEx(IDD_LIN_PROJECT_DIALOG, pParent), m_pThread(nullptr), m_bThreadRunning(false)
+	: CDialogEx(IDD_LIN_PROJECT_DIALOG, pParent), m_pThread1(nullptr), m_pThread2(nullptr), m_pThread3(nullptr), m_pThread4(nullptr), m_bThreadRunning(false)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
@@ -95,6 +95,8 @@ void CLINProjectDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_Sig7, mSig[6]);
 	DDX_Control(pDX, IDC_Sig8, mSig[7]);
 	DDX_Control(pDX, IDC_Sig9, mSig[8]);
+	DDX_Control(pDX, IDC_SignalDataList, mSignalDataList);
+	DDX_Control(pDX, IDC_Hex, mHex);
 }
 
 BEGIN_MESSAGE_MAP(CLINProjectDlg, CDialogEx)
@@ -115,6 +117,7 @@ BEGIN_MESSAGE_MAP(CLINProjectDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_Save, &CLINProjectDlg::OnBnClickedSave)
 	ON_WM_CLOSE()
 	ON_CBN_SELCHANGE(IDC_FrameName, &CLINProjectDlg::OnCbnSelchangeFramename)
+	ON_BN_CLICKED(IDC_Hex, &CLINProjectDlg::OnBnClickedHex)
 END_MESSAGE_MAP()
 
 
@@ -164,12 +167,26 @@ BOOL CLINProjectDlg::OnInitDialog()
 	mSignalList.GetWindowRect(&rtSignal);
 	mSignalList.SetExtendedStyle(LVS_EX_CHECKBOXES | LVS_EX_GRIDLINES | LVS_EX_FULLROWSELECT);
 
-	mSignalList.InsertColumn(0, TEXT("Signal Name"), LVCFMT_LEFT, rtSignal.Width());
+	mSignalList.InsertColumn(0, TEXT("Signal Name"), LVCFMT_LEFT, rtSignal.Width() * 0.65);
+	mSignalList.InsertColumn(1, TEXT("Frame ID"), LVCFMT_LEFT, rtSignal.Width() * 0.35);
+
+	CRect rtSignalData;
+	mSignalDataList.GetWindowRect(&rtSignalData);
+	mSignalDataList.SetExtendedStyle(LVS_EX_GRIDLINES | LVS_EX_DOUBLEBUFFER );
+
+	mSignalDataList.InsertColumn(0, TEXT("Signal Name"), LVCFMT_LEFT, rtTrace.Width() * 0.6);
+	mSignalDataList.InsertColumn(2, TEXT("Data"), LVCFMT_LEFT, rtTrace.Width() * 0.4);
 
 	// 그래프 초기화
 	for (int i = 0; i < 9; i++) {
 		initGraph(i);
 	}
+
+	// 송신 데이터 글자수 제한
+	for (int i = 0; i < 8; i++) {
+		mTx[i]->SetLimitText(3);
+	}
+
 
 	return TRUE;  // 포커스를 컨트롤에 설정하지 않으면 TRUE를 반환합니다.
 }
@@ -240,7 +257,6 @@ void CLINProjectDlg::initPharam() {
 	graphSig.clear();
 	signalEncodings.clear();
 	logDatas.clear();
-	signalDatas.clear();
 
 	// 위젯 초기화
 	mSchedule.ResetContent();
@@ -249,17 +265,18 @@ void CLINProjectDlg::initPharam() {
 	mTraceList.DeleteAllItems();
 	mTraceList.DeleteAllItems();
 	mSignalList.DeleteAllItems();
+	mSignalDataList.DeleteAllItems();
 
 	// 그래프 초기화
 	for (int i = 0; i < 9; i++) {
 		mSig[i].SetWindowTextW(_T(""));
 		pSeries[i]->RemovePointsFromBegin(pSeries[i]->GetPointsCount());
 	}
+	graphDatas.clear();
 
 	// 그래프 변수 초기화
 	signalEncodings = {};
 	time = 0;
-	signalDatas = {};
 
 }
 
@@ -310,43 +327,42 @@ int CLINProjectDlg::w_LINLOG_parse(string filePath) {
 				getline(ss_temp, time, ',');
 
 				if (data == " ") break;
-				logDatas[id].push_back(logData{ stoi(data), stod(time) });
+				logDatas[id].push_back(logData{ stoull(data), stod(time) });
 			}
 		}
 	}
 
 	for (int id : FrameIDs) {
 		for (signalStartEnd sig : signalEncodings[id]) {
-			graphData a = {};
-			a.name = sig.name;
-			a.timesArr[a.position] = 0;
-			a.valuesArr[a.position] = 0;
-			a.position++;
-			signalDatas.push_back(a);
-
 			CString temp(sig.name.c_str());
+			CString fid;
+			fid.Format(_T("0x%X"), id);
 			mSignalList.InsertItem(sig.sigIndex, temp);
+			mSignalList.SetItemText(sig.sigIndex, 1, fid);
 		}
 	}
 
-	for (int id : FrameIDs) {
-		for (logData log : logDatas[id]) {
-			int Data = log.data;
-			for (signalStartEnd sig : signalEncodings[id]) {
-				double value;
+	//for (int id : FrameIDs) {
+	//	for (logData log : logDatas[id]) {
+	//		ULONG64 Data = log.data;
+	//		for (signalStartEnd sig : signalEncodings[id]) {
+	//			double value = 0;
+	//			int sig_start = 64 - sig.end; // 시작 비트 위치
+	//			int sig_end = 64 - sig.start;   // 끝 비트 위치
+	//			int length = sig.end - sig.start ;
 
-				int Data1 = Data >> (64 - sig.end);
-				int Data2 = Data >> (64 - sig.start);
-				Data2 <<= (sig.end - sig.start);
+	//			// 비트 마스크 생성
+	//			ULONG64 sigFilter = ((1ULL << (sig_end - sig_start + 1)) - 1) << sig_start;
 
-				value = (Data1 - Data2);
+	//			// 데이터 추출
+	//			value = (Data & sigFilter) >> sig_start;
 
-				signalDatas[sig.sigIndex].timesArr[signalDatas[sig.sigIndex].position] = log.time;
-				signalDatas[sig.sigIndex].valuesArr[signalDatas[sig.sigIndex].position] = value;
-				signalDatas[sig.sigIndex].position++;
-			}
-		}
-	}
+	//			signalDatas[sig.sigIndex].timesArr[signalDatas[sig.sigIndex].position] = log.time;
+	//			signalDatas[sig.sigIndex].valuesArr[signalDatas[sig.sigIndex].position] = value;
+	//			signalDatas[sig.sigIndex].position++;
+	//		}
+	//	}
+	//}
 
 
 	CString FilePath(filePath.c_str());
@@ -921,23 +937,17 @@ int CLINProjectDlg::w_LDF_parse(string filePath) {
 			sig.name = d.name;
 			sig.start = d.start;
 
-			int minLength = f.length * 8 - 1 - d.start;
-			for (w_DataStruct temp_d : f.w_Data) {
-				int length = temp_d.start - d.start;
-				if (length > 0 && length < minLength) {
-					minLength = length;
+			int sigLength = 1;
+
+			for (w_Signal wSig : w_Signals) {
+				if (wSig.name == sig.name) {
+					sigLength = wSig.dataLength;
+					break;
 				}
 			}
-			sig.end = sig.start + minLength;
+			
+			sig.end = sig.start + sigLength;
 			signalEncoding.push_back(sig);
-
-			// 데이터 틀 추가
-			graphData a = {};
-			a.name = d.name;
-			a.timesArr[a.position] = 0;
-			a.valuesArr[a.position] = 0;
-			a.position++;
-			signalDatas.push_back(a);
 		}
 		signalEncodings[f.id] = signalEncoding;
 	}
@@ -1020,10 +1030,12 @@ void CLINProjectDlg::w_Parser_Nodes(string& line) {
 void CLINProjectDlg::w_Parser_Signals(string& line) {
 	stringstream ss(line);
 	w_Signal sig;
-	getline(ss, sig.name, ':');  // 신호 이름 추출
 
 	// 데이터 추출
 	string data;
+	getline(ss, data, ':');  // 신호 이름 추출
+	data.erase(remove(data.begin(), data.end(), ' '), data.end());
+	sig.name = data;
 	getline(ss, data, ';');
 	stringstream dataStream(data);
 	string value;
@@ -1095,9 +1107,10 @@ int CLINProjectDlg::wLIN_start() {
 	// 시작/재시작 성공 시 읽기 시작
 	if (result == errOK && !m_bThreadRunning) {
 		m_bThreadRunning = true;
-		m_pThread = AfxBeginThread(wReadDataThread, this);
-		m_pThread = AfxBeginThread(wTimerThread, this);
-		m_pThread = AfxBeginThread(wGraphDrawThread, this);
+		m_pThread1 = AfxBeginThread(wReadDataThread, this);
+		m_pThread2 = AfxBeginThread(wTimerThread, this);
+		//m_pThread3 = AfxBeginThread(wGraphDrawThread, this);
+		//m_pThread4 = AfxBeginThread(wGetDataThread, this);
 	}	
 
 	return 0;
@@ -1187,7 +1200,7 @@ int CLINProjectDlg::wLIN_clear() {
 	mErrCode.SetWindowTextW(errCode);
 
 	
-	onPause = false;
+	onPause = true;
 	onClear = true;
 	return 0;
 }
@@ -1201,21 +1214,49 @@ UINT CLINProjectDlg::wGraphDrawThread(LPVOID pParam) {
 }
 
 void CLINProjectDlg::wGraphDraw() {
-	int position = 0;
 	while (m_bThreadRunning) {
-		while (position < signalDatas[0].position) {
-			for (int i = 0; i < graphSig.size(); i++) {
-				int index = graphSig[i];
-				pSeries[i]->AddPoint(
-					signalDatas[index].timesArr[position],
-					signalDatas[index].valuesArr[position]
-				);
-			}
-			position++;
+		for (int m = 0; m < graphDatas.size(); m++) {
+			int position = graphDatas[m].position - 1;
+			pSeries[m]->AddPoint(graphDatas[m].timesArr[position], graphDatas[m].valuesArr[position]);
 		}
-		Sleep(10);
+		Sleep(5);
 	}
 }
+
+
+UINT CLINProjectDlg::wGetDataThread(LPVOID pParam) {
+	CLINProjectDlg* pDlg = reinterpret_cast<CLINProjectDlg*>(pParam);
+	if (pDlg) {
+		pDlg->wGetData();
+	}
+	return 0;
+}
+
+void CLINProjectDlg::wGetData() {
+	while (m_bThreadRunning) {
+		for (int m = 0; m < graphDatas.size(); m++) {
+			graphData g = graphDatas[m];
+			int id = gSettings[m].id, s_start = gSettings[m].start, s_end = gSettings[m].end;
+			for (int pos = g.position; pos < logDatas[id].size() + 1; pos++) {
+				graphDatas[m].timesArr[pos] = logDatas[id][pos].time;
+				int length = s_end - s_start;
+				ULONG64 mask = (1ULL << length) - 1;
+
+				if (id % 2 == 0) {
+					mask <<= 63 - s_end - 8 + 1;
+					graphDatas[m].valuesArr[pos] = (logDatas[id][pos].data & mask) >> (63 - s_end - 8 + 1);
+				}
+				else {
+					mask <<= 63 - s_end + 1;
+					graphDatas[m].valuesArr[pos] = (logDatas[id][pos].data & mask) >> (63 - s_end + 1);
+				}
+			}
+		}
+		wGraphDraw();
+		Sleep(5);
+	}
+}
+
 
 UINT CLINProjectDlg::wTimerThread(LPVOID pParam) {
 	CLINProjectDlg* pDlg = reinterpret_cast<CLINProjectDlg*>(pParam);
@@ -1273,41 +1314,27 @@ void CLINProjectDlg::wReadData() {
 				// Trace 값
 				int nItemNum = find(FrameIDs.begin(), FrameIDs.end(), (rcvMsg.FrameId & 0x3F)) - FrameIDs.begin();
 
-				CString frameID, frameNAME(FrameNames[nItemNum].c_str()), data, flag;
+				CString frameID;
+				CString data;
+				CString flag;
 
 				frameID.Format(_T("0x%X"), (rcvMsg.FrameId & 0x3F));
 				data.Format(_T("%X %X %X %X %X %X %X %X"), rcvMsg.Data[0], rcvMsg.Data[1], rcvMsg.Data[2], rcvMsg.Data[3],
 					rcvMsg.Data[4], rcvMsg.Data[5], rcvMsg.Data[6], rcvMsg.Data[7]);
 				flag.Format(_T("%X"), rcvMsg.ErrorFlags);
 
-				mTraceList.SetItemText(nItemNum, 0, frameID);
-				mTraceList.SetItemText(nItemNum, 1, frameNAME);
+				//mTraceList.SetItemText(nItemNum, 0, frameID);
 				mTraceList.SetItemText(nItemNum, 2, data);
 				mTraceList.SetItemText(nItemNum, 3, flag);
 
-				int Data = 0;
-				int d8 = 1;
-				for (int j = rcvMsg.Length - 1; j >= 0; j--) {
-					Data += rcvMsg.Data[j] * d8;
-					d8 *= 8;
+				ULONG64 Data = 0;
+				for (int j = 0; j < 8; j++) {
+					Data <<= 8;
+					Data += rcvMsg.Data[j];
 				}
 				logDatas[(rcvMsg.FrameId & 0x3F)].push_back(logData{ Data, sigTime});
-
-				for (signalStartEnd sig: signalEncodings[(rcvMsg.FrameId & 0x3F)]) {
-					double value;
-
-					int Data1 = Data >> ((rcvMsg.Length * 8) - sig.end);
-					int Data2 = Data >> ((rcvMsg.Length * 8) - sig.start);
-					Data2 <<= (sig.end - sig.start);
-
-					value = (Data1 - Data2);
-
-					signalDatas[sig.sigIndex].timesArr[signalDatas[sig.sigIndex].position] = sigTime;
-					signalDatas[sig.sigIndex].valuesArr[signalDatas[sig.sigIndex].position] = value;
-					signalDatas[sig.sigIndex].position++;
-				}
 				
-
+				wGetData();
 			}
 		}
 	}
@@ -1421,6 +1448,15 @@ void CLINProjectDlg::OnCbnSelchangeFrameid()
 
 	frameId_global = f.id;
 	frameLength_global = f.length;
+
+	mSignalDataList.DeleteAllItems();
+	int i = 0;
+	for (w_DataStruct sig : f.w_Data) {
+		CString s(sig.name.c_str());
+		mSignalDataList.InsertItem(i, s);
+		mSignalDataList.SetItemText(i, 1, _T("1"));
+		i++;
+	}
 }
 
 void CLINProjectDlg::OnCbnSelchangeFramename()
@@ -1432,12 +1468,20 @@ void CLINProjectDlg::OnCbnSelchangeFramename()
 
 	frameId_global = f.id;
 	frameLength_global = f.length;
+
+	mSignalDataList.DeleteAllItems();
+	int i = 0;
+	for (w_DataStruct sig : f.w_Data) {
+		CString s(sig.name.c_str());
+		mSignalDataList.InsertItem(i, s);
+		mSignalDataList.SetItemText(i, 1, _T("2"));
+		i++;
+	}
 }
 
 void CLINProjectDlg::OnBnClickedSend()
 {
 	int high, low, i;
-	CEdit* mTx[8] = { &mTx0, &mTx1, &mTx2, &mTx3, &mTx4, &mTx5, &mTx6, &mTx7 };
 	CString temp, delay;
 	bool TxIsEmpty = false;
 	for (i = 0; i < 8; i++) {
@@ -1463,20 +1507,29 @@ void CLINProjectDlg::OnBnClickedSend()
 		MessageBox(_T("Start Schedule!"));
 	}
 	else {
-		for (i = 0; i < 8; i++) {
-			temp = "";
-			mTx[i]->GetWindowTextW(temp);
-			if (temp.GetLength() >= 2) {
-				high = (temp[0] > '9') ? temp[0] - 'A' + 10 : temp[0] - '0';
-				low = (temp[1] > '9') ? temp[1] - 'A' + 10 : temp[1] - '0';
+		if (mHex.GetCheck()) {
+			for (i = 0; i < 8; i++) {
+				temp = "";
+				mTx[i]->GetWindowTextW(temp);
+				if (temp.GetLength() >= 2) {
+					high = (temp[0] > '9') ? temp[0] - 'A' + 10 : temp[0] - '0';
+					low = (temp[1] > '9') ? temp[1] - 'A' + 10 : temp[1] - '0';
 
-				sendData[i] = (high << 4) | low;
+					sendData[i] = (high << 4) | low;
+				}
+				else if (temp.GetLength() == 1) {
+					high = 0;
+					low = (temp[0] > '9') ? temp[0] - 'A' + 10 : temp[0] - '0';
+
+					sendData[i] = (high << 4) | low;
+				}
 			}
-			else if (temp.GetLength() == 1) {
-				high = 0;
-				low = (temp[0] > '9') ? temp[0] - 'A' + 10 : temp[0] - '0';
-
-				sendData[i] = (high << 4) | low;
+		}
+		else {
+			for (i = 0; i < 8; i++) {
+				temp = "";
+				mTx[i]->GetWindowTextW(temp);
+				sendData[i] = _ttoi(temp);
 			}
 		}
 
@@ -1493,42 +1546,86 @@ void CLINProjectDlg::OnLvnItemchangedSignallist(NMHDR* pNMHDR, LRESULT* pResult)
 		auto i = find(begin(graphSig), end(graphSig), index);
 
 
-		if (!mSignalList.GetCheck(index) && graphSig.size() > 0) {
+		if (mSignalList.GetCheck(index) && graphSig.size() == 9) {
+			MessageBox(_T("Full Graph Size."));
+			mSignalList.SetCheck(index, false);
+		}
+		else if (!mSignalList.GetCheck(index) && graphSig.size() > 0) {
 			int m = find(graphSig.begin(), graphSig.end(), index) - graphSig.begin();
 
 			graphSig.erase(remove(graphSig.begin(), graphSig.end(), index), graphSig.end());
+
+			graphDatas.erase(graphDatas.begin() + m);
+			gSettings.erase(gSettings.begin() + m);
 			for (int j = m; j < graphSig.size()+1; j++) {
-				int sig;
-				int pointCnt = signalDatas[j].position;
-				pSeries[j]->RemovePointsFromBegin(pointCnt);
+				int pos = graphDatas[j].position;
+				pSeries[j]->RemovePointsFromBegin(pos);
 				if (j >= graphSig.size()) {
 					mSig[j].SetWindowTextW(_T(""));
 					continue;
 				}
-				sig = graphSig[j];
 
-				CString signal(signalDatas[sig].name.c_str());
+				CString signal(mSignalList.GetItemText(graphSig[j], 0));
 				mSig[j].SetWindowTextW(signal);
 			}
 
 			for (int j = m; j < graphSig.size(); j++) {
-				pSeries[j]->AddPoints(&signalDatas[graphSig[j]].timesArr[0], &signalDatas[graphSig[j]].valuesArr[0], signalDatas[graphSig[j]].position);
+				pSeries[j]->AddPoints(&graphDatas[j].timesArr[0], &graphDatas[j].valuesArr[0], graphDatas[j].position);
 			}
 
 		}
-		else if (mSignalList.GetCheck(index) && graphSig.size() < 9) {
+		else if (mSignalList.GetCheck(index)&& graphSig.size() < 9) {
 			graphSig.push_back(index);
-			int m = find(graphSig.begin(), graphSig.end(), index) - graphSig.begin();
-			int sig = graphSig[m];
+			int m = graphSig.size() - 1;
 
-			CString signal(signalDatas[sig].name.c_str());
+			CString signal(mSignalList.GetItemText(index, 0));
 			mSig[m].SetWindowTextW(signal);
 
-			pSeries[m]->AddPoints(&signalDatas[index].timesArr[0], &signalDatas[index].valuesArr[0], signalDatas[index].position);
-		}
-		else if (graphSig.size() == 9) {
-			MessageBox(_T("Full Graph Size."));
-			mSignalList.SetCheck(index, false);
+			graphData a;
+			a.name = string(CT2CA(mSignalList.GetItemText(index, 0)));
+			a.position = 1;
+			a.timesArr[0] = 0;
+			a.valuesArr[0] = 0;
+
+			graphSetting g;
+
+			for (int id : FrameIDs) {
+				for (signalStartEnd sss : signalEncodings[id]) {
+					if (a.name != sss.name) continue;
+					else if (logDatas.empty()) {
+						g.id = id;
+						g.start = sss.start;
+						g.end = sss.end;
+
+						continue;
+					}
+					else {
+						a.position = logDatas[id].size() + 1;
+						g.id = id;
+						g.start = sss.start;
+						g.end = sss.end;
+
+						for (int pos = 0; pos < a.position; pos++) {
+							a.timesArr[pos] = logDatas[id][pos].time;
+							int length = sss.end - sss.start;
+							ULONG64 mask = (1ULL << length) - 1;
+
+							if (id % 2 == 0) {
+								mask <<= 63 - sss.end - 8 + 1;
+								a.valuesArr[pos] = (logDatas[id][pos].data & mask) >> (63 - sss.end - 8 + 1);
+							}
+							else {
+								mask <<= 63 - sss.end + 1;
+								a.valuesArr[pos] = (logDatas[id][pos].data & mask) >> (63 - sss.end + 1);
+							}
+						}
+					}
+				}
+			}
+			gSettings.push_back(g);
+			graphDatas.push_back(a);
+
+			pSeries[m]->AddPoints(&graphDatas[m].timesArr[0], &graphDatas[m].valuesArr[0], graphDatas[m].position);
 		}
 	}
 	*pResult = 0;
@@ -1630,3 +1727,17 @@ void CLINProjectDlg::OnClose()
 	CDialogEx::OnClose();
 }
 
+
+void CLINProjectDlg::OnBnClickedHex()
+{
+	if (mHex.GetCheck()) {
+		for (int i = 0; i < 8; i++) {
+			mTx[i]->SetLimitText(2);
+		}
+	}
+	else {
+		for (int i = 0; i < 8; i++) {
+			mTx[i]->SetLimitText(3);
+		}
+	}
+}
