@@ -1449,58 +1449,31 @@ void CLINProjectDlg::OnBnClickedSend()
 {
 	int high, low, i;
 	CString temp, delay;
-	bool TxIsEmpty = false;
-	for (i = 0; i < 8; i++) {
-		temp = "";
-		mTx[i]->GetWindowTextW(temp);
-		if (temp == _T("")) {
-			TxIsEmpty = true;
-			break;
-		}
-	}
+	//bool TxIsEmpty = false;
+	//for (i = 0; i < 8; i++) {
+	//	temp = "";
+	//	mTx[i]->GetWindowTextW(temp);
+	//	if (temp == _T("")) {
+	//		TxIsEmpty = true;
+	//		break;
+	//	}
+	//}
 
 	mDelay.GetWindowTextW(delay);
 	if (mFrameId.GetCurSel() == -1) {
 		MessageBox(_T("Select Frame ID!"));
 	}
-	else if (TxIsEmpty) {
-		MessageBox(_T("Edit All Data!"));
-	}
+	//else if (TxIsEmpty) {
+	//	MessageBox(_T("Edit All Data!"));
+	//}
 	else if (!m_bThreadRunning) {
 		MessageBox(_T("Start Schedule!"));
 	}
-	else if (delay == _T("")) {
-		if (mHex.GetCheck()) {
-			for (i = 0; i < 8; i++) {
-				temp = "";
-				mTx[i]->GetWindowTextW(temp);
-				if (temp.GetLength() >= 2) {
-					high = (temp[0] > '9') ? temp[0] - 'A' + 10 : temp[0] - '0';
-					low = (temp[1] > '9') ? temp[1] - 'A' + 10 : temp[1] - '0';
-
-					sendData[i] = (high << 4) | low;
-				}
-				else if (temp.GetLength() == 1) {
-					high = 0;
-					low = (temp[0] > '9') ? temp[0] - 'A' + 10 : temp[0] - '0';
-
-					sendData[i] = (high << 4) | low;
-				}
-			}
-		}
-		else {
-			for (i = 0; i < 8; i++) {
-				temp = "";
-				mTx[i]->GetWindowTextW(temp);
-				sendData[i] = _ttoi(temp);
-			}
-		}
-
-		LIN_UpdateByteArray(hClient, hHw, frameId_global, 0, frameLength_global, &sendData[0]);
-	}
 	else {
-		int d = _ttoi(delay);
-		Sleep(d);
+		if (delay != _T("")) {
+			int d = _ttoi(delay);
+			Sleep(d);
+		}
 
 		if (mHex.GetCheck()) {
 			for (i = 0; i < 8; i++) {
@@ -1518,17 +1491,29 @@ void CLINProjectDlg::OnBnClickedSend()
 
 					sendData[i] = (high << 4) | low;
 				}
+				else {
+					sendData[i] = NULL;
+				}
 			}
 		}
 		else {
 			for (i = 0; i < 8; i++) {
 				temp = "";
 				mTx[i]->GetWindowTextW(temp);
-				sendData[i] = _ttoi(temp);
+				if (temp == _T("")) {
+					sendData[i] = NULL;
+				}
+				else {
+					sendData[i] = _ttoi(temp);
+				}
 			}
 		}
 
-		LIN_UpdateByteArray(hClient, hHw, frameId_global, 0, frameLength_global, &sendData[0]);
+		for (int j = 0; j < 8; j++) {
+			if (sendData[j] != NULL) {
+				LIN_UpdateByteArray(hClient, hHw, frameId_global, j, frameLength_global, &sendData[j]);
+			}
+		}
 	}
 }
 
