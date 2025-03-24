@@ -45,8 +45,7 @@ public:
 	// 그래프 함수
 	void initGraph(int index);
 	void wTimer();
-	void wGraphDraw();
-	void wGetData();
+	void wGraphDraw(ULONG64 logData, double logTime, int index);
 
 	// 변수 초기화 함수
 	void initPharam();
@@ -84,10 +83,8 @@ public:
 	ofstream log_file;
 
 	// 스레드
-	CWinThread* m_pThread1, *m_pThread2, *m_pThread3, *m_pThread4;
+	CWinThread* m_pThread1, *m_pThread2;
 	bool m_bThreadRunning;
-	static UINT WINAPI wGetDataThread(LPVOID pParam);
-	static UINT WINAPI wGraphDrawThread(LPVOID pParam);
 	static UINT WINAPI wTimerThread(LPVOID pParam);
 	static UINT WINAPI wReadDataThread(LPVOID pParam);
 
@@ -302,9 +299,8 @@ public:
 	// graphData로 이루어진 벡터(각 신호에 대한 데이터 저장)을 벡터로 모음.
 	struct graphData {
 		string name;
-		double timesArr[50000];
-		double valuesArr[50000];
-		int position = 0;
+		double time;
+		double value;
 	};
 	vector<graphData> graphDatas;
 

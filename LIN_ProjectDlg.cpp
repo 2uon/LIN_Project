@@ -52,7 +52,7 @@ END_MESSAGE_MAP()
 
 
 CLINProjectDlg::CLINProjectDlg(CWnd* pParent /*=nullptr*/)
-	: CDialogEx(IDD_LIN_PROJECT_DIALOG, pParent), m_pThread1(nullptr), m_pThread2(nullptr), m_pThread3(nullptr), m_pThread4(nullptr), m_bThreadRunning(false)
+	: CDialogEx(IDD_LIN_PROJECT_DIALOG, pParent), m_pThread1(nullptr), m_pThread2(nullptr), m_bThreadRunning(false)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
@@ -1109,8 +1109,6 @@ int CLINProjectDlg::wLIN_start() {
 		m_bThreadRunning = true;
 		m_pThread1 = AfxBeginThread(wReadDataThread, this);
 		m_pThread2 = AfxBeginThread(wTimerThread, this);
-		//m_pThread3 = AfxBeginThread(wGraphDrawThread, this);
-		//m_pThread4 = AfxBeginThread(wGetDataThread, this);
 	}	
 
 	return 0;
@@ -1205,59 +1203,6 @@ int CLINProjectDlg::wLIN_clear() {
 	return 0;
 }
 
-UINT CLINProjectDlg::wGraphDrawThread(LPVOID pParam) {
-	CLINProjectDlg* pDlg = reinterpret_cast<CLINProjectDlg*>(pParam);
-	if (pDlg) {
-		pDlg->wGraphDraw();  // 실제 데이터 읽기 함수 실행
-	}
-	return 0;
-}
-
-void CLINProjectDlg::wGraphDraw() {
-	while (m_bThreadRunning) {
-		for (int m = 0; m < graphDatas.size(); m++) {
-			int position = graphDatas[m].position - 1;
-			pSeries[m]->AddPoint(graphDatas[m].timesArr[position], graphDatas[m].valuesArr[position]);
-		}
-		Sleep(5);
-	}
-}
-
-
-UINT CLINProjectDlg::wGetDataThread(LPVOID pParam) {
-	CLINProjectDlg* pDlg = reinterpret_cast<CLINProjectDlg*>(pParam);
-	if (pDlg) {
-		pDlg->wGetData();
-	}
-	return 0;
-}
-
-void CLINProjectDlg::wGetData() {
-	while (m_bThreadRunning) {
-		for (int m = 0; m < graphDatas.size(); m++) {
-			graphData g = graphDatas[m];
-			int id = gSettings[m].id, s_start = gSettings[m].start, s_end = gSettings[m].end;
-			for (int pos = g.position; pos < logDatas[id].size() + 1; pos++) {
-				graphDatas[m].timesArr[pos] = logDatas[id][pos].time;
-				int length = s_end - s_start;
-				ULONG64 mask = (1ULL << length) - 1;
-
-				if (id % 2 == 0) {
-					mask <<= 63 - s_end - 8 + 1;
-					graphDatas[m].valuesArr[pos] = (logDatas[id][pos].data & mask) >> (63 - s_end - 8 + 1);
-				}
-				else {
-					mask <<= 63 - s_end + 1;
-					graphDatas[m].valuesArr[pos] = (logDatas[id][pos].data & mask) >> (63 - s_end + 1);
-				}
-			}
-		}
-		wGraphDraw();
-		Sleep(5);
-	}
-}
-
-
 UINT CLINProjectDlg::wTimerThread(LPVOID pParam) {
 	CLINProjectDlg* pDlg = reinterpret_cast<CLINProjectDlg*>(pParam);
 	if (pDlg) {
@@ -1333,14 +1278,17 @@ void CLINProjectDlg::wReadData() {
 					Data += rcvMsg.Data[j];
 				}
 				logDatas[(rcvMsg.FrameId & 0x3F)].push_back(logData{ Data, sigTime});
-				
-				wGetData();
+
+				for (int m = 0; m < gSettings.size(); m++) {
+					if (gSettings[m].id == (rcvMsg.FrameId & 0x3F)) {
+						wGraphDraw(Data, sigTime, m);
+					}
+				}
 			}
 		}
 	}
 	return;
 }
-
 // 신호 파싱
 /*
 double value;
@@ -1374,6 +1322,24 @@ Data2 <<= (sig.end - sig.start);
 
 value = Data1 - Data2;
 */
+
+void CLINProjectDlg::wGraphDraw(ULONG64 logData, double logTime, int index) {
+	graphSetting g = gSettings[index];
+	int length = g.end - g.start;
+	double value;
+	ULONG64 mask = (1ULL << length) - 1;
+
+	if (g.id % 2 == 0) {
+		mask <<= 63 - g.end - 6 + 1;
+		value = (logData & mask) >> (63 - g.end - 6 + 1);
+	}
+	else {
+		mask <<= 63 - g.end + 1;
+		value = (logData & mask) >> (63 - g.end + 1);
+	}
+	pSeries[index]->AddPoint(logTime, value);
+}
+
 
 void CLINProjectDlg::OnBnClickedStart()
 {
@@ -1497,16 +1463,45 @@ void CLINProjectDlg::OnBnClickedSend()
 	if (mFrameId.GetCurSel() == -1) {
 		MessageBox(_T("Select Frame ID!"));
 	}
-	else if (delay == _T("")) {
-		MessageBox(_T("Edit Delay!"));
-	}
 	else if (TxIsEmpty) {
 		MessageBox(_T("Edit All Data!"));
 	}
 	else if (!m_bThreadRunning) {
 		MessageBox(_T("Start Schedule!"));
 	}
+	else if (delay == _T("")) {
+		if (mHex.GetCheck()) {
+			for (i = 0; i < 8; i++) {
+				temp = "";
+				mTx[i]->GetWindowTextW(temp);
+				if (temp.GetLength() >= 2) {
+					high = (temp[0] > '9') ? temp[0] - 'A' + 10 : temp[0] - '0';
+					low = (temp[1] > '9') ? temp[1] - 'A' + 10 : temp[1] - '0';
+
+					sendData[i] = (high << 4) | low;
+				}
+				else if (temp.GetLength() == 1) {
+					high = 0;
+					low = (temp[0] > '9') ? temp[0] - 'A' + 10 : temp[0] - '0';
+
+					sendData[i] = (high << 4) | low;
+				}
+			}
+		}
+		else {
+			for (i = 0; i < 8; i++) {
+				temp = "";
+				mTx[i]->GetWindowTextW(temp);
+				sendData[i] = _ttoi(temp);
+			}
+		}
+
+		LIN_UpdateByteArray(hClient, hHw, frameId_global, 0, frameLength_global, &sendData[0]);
+	}
 	else {
+		int d = _ttoi(delay);
+		Sleep(d);
+
 		if (mHex.GetCheck()) {
 			for (i = 0; i < 8; i++) {
 				temp = "";
@@ -1543,14 +1538,14 @@ void CLINProjectDlg::OnLvnItemchangedSignallist(NMHDR* pNMHDR, LRESULT* pResult)
 	if (pNMLV->uNewState & LVIS_STATEIMAGEMASK) // 체크박스 변경 감지
 	{
 		int index = pNMLV->iItem;
-		auto i = find(begin(graphSig), end(graphSig), index);
-
+		auto i = find(graphSig.begin(), graphSig.end(), index);
 
 		if (mSignalList.GetCheck(index) && graphSig.size() == 9) {
-			MessageBox(_T("Full Graph Size."));
 			mSignalList.SetCheck(index, false);
+			MessageBox(_T("Full Graph Size."));
+			return;
 		}
-		else if (!mSignalList.GetCheck(index) && graphSig.size() > 0) {
+		else if (!mSignalList.GetCheck(index) && graphSig.size() > 0 && i != graphSig.end()) {
 			int m = find(graphSig.begin(), graphSig.end(), index) - graphSig.begin();
 
 			graphSig.erase(remove(graphSig.begin(), graphSig.end(), index), graphSig.end());
@@ -1558,7 +1553,7 @@ void CLINProjectDlg::OnLvnItemchangedSignallist(NMHDR* pNMHDR, LRESULT* pResult)
 			graphDatas.erase(graphDatas.begin() + m);
 			gSettings.erase(gSettings.begin() + m);
 			for (int j = m; j < graphSig.size()+1; j++) {
-				int pos = graphDatas[j].position;
+				int pos = pSeries[j]->GetPointsCount();
 				pSeries[j]->RemovePointsFromBegin(pos);
 				if (j >= graphSig.size()) {
 					mSig[j].SetWindowTextW(_T(""));
@@ -1570,7 +1565,22 @@ void CLINProjectDlg::OnLvnItemchangedSignallist(NMHDR* pNMHDR, LRESULT* pResult)
 			}
 
 			for (int j = m; j < graphSig.size(); j++) {
-				pSeries[j]->AddPoints(&graphDatas[j].timesArr[0], &graphDatas[j].valuesArr[0], graphDatas[j].position);
+				graphSetting g = gSettings[j];
+				for (int pos = 0; pos < logDatas[g.id].size(); pos++) {
+					int length = g.end - g.start;
+					double value;
+					ULONG64 mask = (1ULL << length) - 1;
+
+					if (g.id % 2 == 0) {
+						mask <<= 63 - g.end - 8 + 1;
+						value = (logDatas[g.id][pos].data & mask) >> (63 - g.end - 8 + 1);
+					}
+					else {
+						mask <<= 63 - g.end + 1;
+						value = (logDatas[g.id][pos].data & mask) >> (63 - g.end + 1);
+					}
+					pSeries[j]->AddPoint(logDatas[g.id][pos].time, value);
+				}
 			}
 
 		}
@@ -1583,9 +1593,8 @@ void CLINProjectDlg::OnLvnItemchangedSignallist(NMHDR* pNMHDR, LRESULT* pResult)
 
 			graphData a;
 			a.name = string(CT2CA(mSignalList.GetItemText(index, 0)));
-			a.position = 1;
-			a.timesArr[0] = 0;
-			a.valuesArr[0] = 0;
+			a.time = 0;
+			a.value = 0;
 
 			graphSetting g;
 
@@ -1600,32 +1609,30 @@ void CLINProjectDlg::OnLvnItemchangedSignallist(NMHDR* pNMHDR, LRESULT* pResult)
 						continue;
 					}
 					else {
-						a.position = logDatas[id].size() + 1;
 						g.id = id;
 						g.start = sss.start;
 						g.end = sss.end;
-
-						for (int pos = 0; pos < a.position; pos++) {
-							a.timesArr[pos] = logDatas[id][pos].time;
-							int length = sss.end - sss.start;
-							ULONG64 mask = (1ULL << length) - 1;
-
-							if (id % 2 == 0) {
-								mask <<= 63 - sss.end - 8 + 1;
-								a.valuesArr[pos] = (logDatas[id][pos].data & mask) >> (63 - sss.end - 8 + 1);
-							}
-							else {
-								mask <<= 63 - sss.end + 1;
-								a.valuesArr[pos] = (logDatas[id][pos].data & mask) >> (63 - sss.end + 1);
-							}
-						}
 					}
 				}
 			}
 			gSettings.push_back(g);
 			graphDatas.push_back(a);
 
-			pSeries[m]->AddPoints(&graphDatas[m].timesArr[0], &graphDatas[m].valuesArr[0], graphDatas[m].position);
+			for (int pos = 0; pos < logDatas[g.id].size(); pos++) {
+				int length = g.end - g.start;
+				double value;
+				ULONG64 mask = (1ULL << length) - 1;
+
+				if (g.id % 2 == 0) {
+					mask <<= 63 - g.end - 6 + 1;
+					value = (logDatas[g.id][pos].data & mask) >> (63 - g.end - 6 + 1);
+				}
+				else {
+					mask <<= 63 - g.end + 1;
+					value = (logDatas[g.id][pos].data & mask) >> (63 - g.end + 1);
+				}
+				pSeries[m]->AddPoint(logDatas[g.id][pos].time,value);
+			}
 		}
 	}
 	*pResult = 0;

@@ -40,10 +40,12 @@
 #define IDC_SignalList                  1033
 #define IDC_FrameName                   1035
 #define IDC_CHECK1                      1036
+#define IDC_Hex                         1036
 #define IDC_CHECK2                      1037
 #define IDC_CHECK3                      1038
 #define IDC_LIST2                       1039
 #define IDC_Graphs                      1039
+#define IDC_SignalDataList              1039
 #define IDC_Graph1                      1049
 #define IDC_Graph2                      1050
 #define IDC_Graph3                      1051
@@ -63,7 +65,6 @@
 #define IDC_Sig7                        1074
 #define IDC_Sig9                        1075
 #define IDC_BUTTON1                     1078
-#define IDC_LIST1                       1090
 
 // Next default values for new objects
 // 
