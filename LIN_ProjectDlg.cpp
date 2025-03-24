@@ -97,6 +97,7 @@ void CLINProjectDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_Sig9, mSig[8]);
 	DDX_Control(pDX, IDC_SignalDataList, mSignalDataList);
 	DDX_Control(pDX, IDC_Hex, mHex);
+	DDX_Control(pDX, IDC_EDIT_MOD, mMod);
 }
 
 BEGIN_MESSAGE_MAP(CLINProjectDlg, CDialogEx)
@@ -118,6 +119,8 @@ BEGIN_MESSAGE_MAP(CLINProjectDlg, CDialogEx)
 	ON_WM_CLOSE()
 	ON_CBN_SELCHANGE(IDC_FrameName, &CLINProjectDlg::OnCbnSelchangeFramename)
 	ON_BN_CLICKED(IDC_Hex, &CLINProjectDlg::OnBnClickedHex)
+	ON_BN_CLICKED(IDC_Apply, &CLINProjectDlg::OnBnClickedApply)
+	ON_NOTIFY(LVN_ITEMCHANGED, IDC_SignalDataList, &CLINProjectDlg::OnLvnItemchangedSignaldatalist)
 END_MESSAGE_MAP()
 
 
@@ -172,9 +175,10 @@ BOOL CLINProjectDlg::OnInitDialog()
 
 	CRect rtSignalData;
 	mSignalDataList.GetWindowRect(&rtSignalData);
-	mSignalDataList.SetExtendedStyle(LVS_EX_GRIDLINES | LVS_EX_DOUBLEBUFFER );
+	mSignalDataList.SetExtendedStyle(LVS_EX_CHECKBOXES | LVS_EX_GRIDLINES | LVS_EX_DOUBLEBUFFER );
 
 	mSignalDataList.InsertColumn(0, TEXT("Signal Name"), LVCFMT_LEFT, rtTrace.Width() * 0.6);
+	//mSignalDataList.InsertColumn(1, TEXT("Frame Name"), LVCFMT_LEFT, rtTrace.Width() * 0.35);
 	mSignalDataList.InsertColumn(2, TEXT("Data"), LVCFMT_LEFT, rtTrace.Width() * 0.4);
 
 	// 그래프 초기화
@@ -1409,6 +1413,7 @@ void CLINProjectDlg::OnCbnSelchangeFrameid()
 {
 	int selNum = mFrameId.GetCurSel();
 	w_Frame f = w_Frames[selNum];
+	//CString fName(f.name.c_str());
 
 	mFrameName.SetCurSel(selNum);
 
@@ -1420,7 +1425,8 @@ void CLINProjectDlg::OnCbnSelchangeFrameid()
 	for (w_DataStruct sig : f.w_Data) {
 		CString s(sig.name.c_str());
 		mSignalDataList.InsertItem(i, s);
-		mSignalDataList.SetItemText(i, 1, _T("1"));
+		//mSignalDataList.SetItemText(i, 1, fName);
+		mSignalDataList.SetItemText(i, 2, _T("1"));
 		i++;
 	}
 }
@@ -1429,6 +1435,7 @@ void CLINProjectDlg::OnCbnSelchangeFramename()
 {
 	int selNum = mFrameName.GetCurSel();
 	w_Frame f = w_Frames[selNum];
+	//CString fName(f.name.c_str());
 
 	mFrameId.SetCurSel(selNum);
 
@@ -1440,7 +1447,8 @@ void CLINProjectDlg::OnCbnSelchangeFramename()
 	for (w_DataStruct sig : f.w_Data) {
 		CString s(sig.name.c_str());
 		mSignalDataList.InsertItem(i, s);
-		mSignalDataList.SetItemText(i, 1, _T("2"));
+		//mSignalDataList.SetItemText(i, 1, fName);
+		mSignalDataList.SetItemText(i, 2, _T("2"));
 		i++;
 	}
 }
@@ -1732,4 +1740,32 @@ void CLINProjectDlg::OnBnClickedHex()
 			mTx[i]->SetLimitText(3);
 		}
 	}
+}
+void CLINProjectDlg::OnBnClickedApply()
+{
+	CString temp;
+	mMod.GetWindowTextW(temp);
+	//int data = _ttoi(temp);
+	for (int i = 0; i < mSignalDataList.GetItemCount(); i++) {
+		if (mSignalDataList.GetCheck(i)) {
+			mSignalDataList.SetItemText(i, 1, temp);
+		}
+	}
+}
+
+void CLINProjectDlg::OnLvnItemchangedSignaldatalist(NMHDR* pNMHDR, LRESULT* pResult)
+{
+	LPNMLISTVIEW pNMLV = reinterpret_cast<LPNMLISTVIEW>(pNMHDR);
+	if (pNMLV->uNewState & LVIS_STATEIMAGEMASK) // 체크박스 변경 감지
+	{
+		int index = pNMLV->iItem;
+		if (mSignalDataList.GetCheck(index)) {
+			for (int i = 0; i < mSignalDataList.GetItemCount(); i++) {
+				if (mSignalDataList.GetCheck(i) && i != index) {
+					mSignalDataList.SetCheck(i, false);
+				}
+			}
+		}
+	}
+	*pResult = 0;
 }

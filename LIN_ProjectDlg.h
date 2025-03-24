@@ -314,4 +314,9 @@ public:
 	CListCtrl mSignalDataList;
 	CButton mHex;
 	afx_msg void OnBnClickedHex();
+
+	int iSavedItem, iSavedSubItem;
+	CEdit mMod;
+	afx_msg void OnBnClickedApply();
+	afx_msg void OnLvnItemchangedSignaldatalist(NMHDR* pNMHDR, LRESULT* pResult);
 };
