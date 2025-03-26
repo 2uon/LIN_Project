@@ -103,6 +103,7 @@ void CChartSerie::ValueToScreen(double XValue, double YValue, CPoint &ScreenPoin
 	ScreenPoint.y = m_pVerticalAxis->ValueToScreen(YValue);
 }
 
+
 void CChartSerie::SetVisible(bool bVisible)
 { 
 	m_bIsVisible = bVisible; 

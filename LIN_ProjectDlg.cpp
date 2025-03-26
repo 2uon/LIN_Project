@@ -121,6 +121,14 @@ BEGIN_MESSAGE_MAP(CLINProjectDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_Hex, &CLINProjectDlg::OnBnClickedHex)
 	ON_BN_CLICKED(IDC_Apply, &CLINProjectDlg::OnBnClickedApply)
 	ON_NOTIFY(LVN_ITEMCHANGED, IDC_SignalDataList, &CLINProjectDlg::OnLvnItemchangedSignaldatalist)
+	ON_EN_CHANGE(IDC_Tx0, &CLINProjectDlg::OnEnChangeTx)
+	ON_EN_CHANGE(IDC_Tx1, &CLINProjectDlg::OnEnChangeTx)
+	ON_EN_CHANGE(IDC_Tx2, &CLINProjectDlg::OnEnChangeTx)
+	ON_EN_CHANGE(IDC_Tx3, &CLINProjectDlg::OnEnChangeTx)
+	ON_EN_CHANGE(IDC_Tx4, &CLINProjectDlg::OnEnChangeTx)
+	ON_EN_CHANGE(IDC_Tx5, &CLINProjectDlg::OnEnChangeTx)
+	ON_EN_CHANGE(IDC_Tx6, &CLINProjectDlg::OnEnChangeTx)
+	ON_EN_CHANGE(IDC_Tx7, &CLINProjectDlg::OnEnChangeTx)
 END_MESSAGE_MAP()
 
 
@@ -1341,7 +1349,14 @@ void CLINProjectDlg::wGraphDraw(ULONG64 logData, double logTime, int index) {
 		mask <<= 63 - g.end + 1;
 		value = (logData & mask) >> (63 - g.end + 1);
 	}
+
 	pSeries[index]->AddPoint(logTime, value);
+	if (logTime < 20) {
+		mGraph[index].GetBottomAxis()->SetMinMax(0, 25);
+	}
+	else {
+		mGraph[index].GetBottomAxis()->SetMinMax(logTime - 20, logTime + 5);
+	}
 }
 
 
@@ -1429,6 +1444,11 @@ void CLINProjectDlg::OnCbnSelchangeFrameid()
 		mSignalDataList.SetItemText(i, 2, _T("1"));
 		i++;
 	}
+
+	for (i = 0; i < 8; i++) {
+		mTx[i]->SetWindowTextW(L"");
+		sendData[i] = 0;
+	}
 }
 
 void CLINProjectDlg::OnCbnSelchangeFramename()
@@ -1451,29 +1471,22 @@ void CLINProjectDlg::OnCbnSelchangeFramename()
 		mSignalDataList.SetItemText(i, 2, _T("2"));
 		i++;
 	}
+
+	for (i = 0; i < 8; i++) {
+		mTx[i]->SetWindowTextW(L"");
+		sendData[i] = 0;
+	}
 }
 
 void CLINProjectDlg::OnBnClickedSend()
 {
 	int high, low, i;
 	CString temp, delay;
-	//bool TxIsEmpty = false;
-	//for (i = 0; i < 8; i++) {
-	//	temp = "";
-	//	mTx[i]->GetWindowTextW(temp);
-	//	if (temp == _T("")) {
-	//		TxIsEmpty = true;
-	//		break;
-	//	}
-	//}
 
 	mDelay.GetWindowTextW(delay);
 	if (mFrameId.GetCurSel() == -1) {
 		MessageBox(_T("Select Frame ID!"));
 	}
-	//else if (TxIsEmpty) {
-	//	MessageBox(_T("Edit All Data!"));
-	//}
 	else if (!m_bThreadRunning) {
 		MessageBox(_T("Start Schedule!"));
 	}
@@ -1492,12 +1505,16 @@ void CLINProjectDlg::OnBnClickedSend()
 					low = (temp[1] > '9') ? temp[1] - 'A' + 10 : temp[1] - '0';
 
 					sendData[i] = (high << 4) | low;
+
+					LIN_UpdateByteArray(hClient, hHw, frameId_global, i, 1, &sendData[i]);
 				}
 				else if (temp.GetLength() == 1) {
 					high = 0;
 					low = (temp[0] > '9') ? temp[0] - 'A' + 10 : temp[0] - '0';
 
 					sendData[i] = (high << 4) | low;
+
+					LIN_UpdateByteArray(hClient, hHw, frameId_global, i, 1, &sendData[i]);
 				}
 				else {
 					sendData[i] = NULL;
@@ -1508,18 +1525,11 @@ void CLINProjectDlg::OnBnClickedSend()
 			for (i = 0; i < 8; i++) {
 				temp = "";
 				mTx[i]->GetWindowTextW(temp);
-				if (temp == _T("")) {
-					sendData[i] = NULL;
-				}
-				else {
+				if (temp.GetLength() > 0) {
 					sendData[i] = _ttoi(temp);
-				}
-			}
-		}
 
-		for (int j = 0; j < 8; j++) {
-			if (sendData[j] != NULL) {
-				LIN_UpdateByteArray(hClient, hHw, frameId_global, j, frameLength_global, &sendData[j]);
+					LIN_UpdateByteArray(hClient, hHw, frameId_global, i, 1, &sendData[i]);
+				}
 			}
 		}
 	}
@@ -1643,7 +1653,7 @@ void CLINProjectDlg::initGraph(int index) {
 	//mGraph[index].ShowMouseCursor(true);
 	//CChartCrossHairCursor* pCrossHair = mGraph[index].CreateCrossHairCursor();
 	pLeftAxis->SetMarginSize(false, 80);
-
+	//pBottomAxis->EnableScrollBar(true);
 
 	/// 라인차트 파트
 	pSeries[index] = mGraph[index].CreateLineSerie();
@@ -1730,25 +1740,38 @@ void CLINProjectDlg::OnClose()
 
 void CLINProjectDlg::OnBnClickedHex()
 {
+	int a = 0, high, low;
+	CString temp;
+
 	if (mHex.GetCheck()) {
 		for (int i = 0; i < 8; i++) {
+			mTx[i]->GetWindowTextW(temp);
+			a = _ttoi(temp);
+
+			temp.Format(_T("%X"), a);
 			mTx[i]->SetLimitText(2);
+			mTx[i]->SetWindowTextW(temp);
 		}
 	}
 	else {
 		for (int i = 0; i < 8; i++) {
+			mTx[i]->GetWindowTextW(temp);
+			if (temp.GetLength() >= 2) {
+				high = (temp[0] > '9') ? temp[0] - 'A' + 10 : temp[0] - '0';
+				low = (temp[1] > '9') ? temp[1] - 'A' + 10 : temp[1] - '0';
+
+				a = (high << 4) | low;
+			}
+			else if (temp.GetLength() == 1) {
+				high = 0;
+				low = (temp[0] > '9') ? temp[0] - 'A' + 10 : temp[0] - '0';
+
+				a = (high << 4) | low;
+			}
+
+			temp.Format(_T("%d"), a);
 			mTx[i]->SetLimitText(3);
-		}
-	}
-}
-void CLINProjectDlg::OnBnClickedApply()
-{
-	CString temp;
-	mMod.GetWindowTextW(temp);
-	//int data = _ttoi(temp);
-	for (int i = 0; i < mSignalDataList.GetItemCount(); i++) {
-		if (mSignalDataList.GetCheck(i)) {
-			mSignalDataList.SetItemText(i, 1, temp);
+			mTx[i]->SetWindowTextW(temp);
 		}
 	}
 }
@@ -1763,9 +1786,112 @@ void CLINProjectDlg::OnLvnItemchangedSignaldatalist(NMHDR* pNMHDR, LRESULT* pRes
 			for (int i = 0; i < mSignalDataList.GetItemCount(); i++) {
 				if (mSignalDataList.GetCheck(i) && i != index) {
 					mSignalDataList.SetCheck(i, false);
+
+
 				}
 			}
 		}
 	}
 	*pResult = 0;
+}
+
+//////////////
+void CLINProjectDlg::OnEnChangeTx()
+{
+	CString temp;
+	int high, low, i;
+
+	if (mHex.GetCheck()) {
+		for (i = 0; i < 8; i++) {
+			temp = "";
+			mTx[i]->GetWindowTextW(temp);
+			if (temp.GetLength() >= 2) {
+				high = (temp[0] > '9') ? temp[0] - 'A' + 10 : temp[0] - '0';
+				low = (temp[1] > '9') ? temp[1] - 'A' + 10 : temp[1] - '0';
+
+				sendData[i] = (high << 4) | low;
+
+				LIN_UpdateByteArray(hClient, hHw, frameId_global, i, 1, &sendData[i]);
+			}
+			else if (temp.GetLength() == 1) {
+				high = 0;
+				low = (temp[0] > '9') ? temp[0] - 'A' + 10 : temp[0] - '0';
+
+				sendData[i] = (high << 4) | low;
+			}
+		}
+	}
+	else {
+		for (i = 0; i < 8; i++) {
+			temp = "";
+			mTx[i]->GetWindowTextW(temp);
+			if (temp.GetLength() > 0) {
+				sendData[i] = _ttoi(temp);
+			}
+		}
+	}
+	for (int j = 0; j < 8; j++) {
+		sData <<= 8;
+		sData += sendData[j];
+	}
+
+	//temp.Format(_T("%d %d"), sData >> 32, sData);
+	//MessageBox(temp);
+}
+
+//////////
+void CLINProjectDlg::OnBnClickedApply()
+{
+	CString temp;
+	mMod.GetWindowTextW(temp);
+
+	for (int i = 0; i < mSignalDataList.GetItemCount(); i++) {
+		if (mSignalDataList.GetCheck(i)) {
+			mSignalDataList.SetItemText(i, 1, temp);
+
+			ULONG64 d = _ttoi(temp);
+			signalStartEnd sig = signalEncodings[frameId_global][i];
+			int length = sig.end - sig.start;
+			ULONG64 mask;
+
+			if (frameId_global % 2 == 0) {
+				mask = ~(((1ULL << length) - 1) << (sig.end + 5));
+				sData = (sData & mask);
+				sData += d << (63 - sig.end - 5); // 5 = 6 - 1
+			}
+			else {
+				mask = ~(((1ULL << length) - 1) << (sig.end + 1));
+				sData = (sData & mask);
+				sData += d << (63 - sig.end + 1);
+			}
+			////
+			/*temp.Format(_T("%X %X"), mask >> 32, (mask << 32) >> 32);
+			MessageBox(temp);
+			temp.Format(_T("%X %X"), sData >> 32, sData);
+			MessageBox(temp);*/
+			//sData = 4294967296;
+
+			ULONG64 t_sData = sData;
+			for (int j = 0; j < 8; j++) {
+				ULONG64 a = 0;
+				a = t_sData >> 56;
+				t_sData <<= 8;
+
+
+				if (mHex.GetCheck()) {
+					temp.Format(_T("%X"), a);
+				}
+				else {
+					temp.Format(_T("%d"), a);
+				}
+				mTx[j]->SetWindowTextW(temp);
+				sendData[j] = a;
+			}
+			////
+			/*temp.Format(_T("%X %X %X %X %X %X %X %X"),
+				sendData[0], sendData[1], sendData[2], sendData[3],
+				sendData[4], sendData[5], sendData[6], sendData[7]);
+			MessageBox(temp);*/
+		}
+	}
 }

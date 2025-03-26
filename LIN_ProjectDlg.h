@@ -227,7 +227,7 @@ public:
 	CString cst;
 	CString flag;
 
-	BYTE sendData[8] = { 0, 0, 0, 1, 0, 0, 0, 0 };
+	BYTE sendData[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 	BYTE data[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 
 	int schedule_position = 0;
@@ -319,4 +319,6 @@ public:
 	CEdit mMod;
 	afx_msg void OnBnClickedApply();
 	afx_msg void OnLvnItemchangedSignaldatalist(NMHDR* pNMHDR, LRESULT* pResult);
+	afx_msg void OnEnChangeTx();
+	ULONG64 sData = 0;
 };
