@@ -1786,8 +1786,6 @@ void CLINProjectDlg::OnLvnItemchangedSignaldatalist(NMHDR* pNMHDR, LRESULT* pRes
 			for (int i = 0; i < mSignalDataList.GetItemCount(); i++) {
 				if (mSignalDataList.GetCheck(i) && i != index) {
 					mSignalDataList.SetCheck(i, false);
-
-
 				}
 			}
 		}
