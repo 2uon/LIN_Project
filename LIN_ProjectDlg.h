@@ -35,7 +35,7 @@ public:
 
 	// 파싱 함수
 	int w_LDF_parse(string filePath);
-	int w_LINLOG_parse(string filePath);
+	void w_CSV_parse(string filePath);
 
 	void w_Parser_Config(string& line);
 	void w_Parser_Nodes(string& line);
@@ -74,13 +74,16 @@ public:
 	virtual BOOL PreTranslateMessage(MSG* pMsg);
 	afx_msg void OnBnClickedConnect();
 	afx_msg void OnBnClickedDisconnect();
-	afx_msg void OnBnClickedSave();
 	afx_msg void OnClose();
 
 	// 파일
 	string openFileName;
 	string openFileExt;
+
+	// 로그 파일
+	string logFileName;
 	ofstream log_file;
+	
 
 	// 스레드
 	CWinThread* m_pThread1, *m_pThread2;
@@ -321,4 +324,6 @@ public:
 	afx_msg void OnLvnItemchangedSignaldatalist(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnEnChangeTx();
 	ULONG64 sData = 0;
+	CButton mLogSave;
+	afx_msg void OnBnClickedLogsave();
 };

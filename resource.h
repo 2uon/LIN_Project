@@ -43,6 +43,7 @@
 #define IDC_Hex                         1036
 #define IDC_CHECK2                      1037
 #define IDC_CHECK3                      1038
+#define IDC_LogSave                     1038
 #define IDC_LIST2                       1039
 #define IDC_Graphs                      1039
 #define IDC_SignalDataList              1039
