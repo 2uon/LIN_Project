@@ -129,6 +129,7 @@ BEGIN_MESSAGE_MAP(CLINProjectDlg, CDialogEx)
 	ON_EN_CHANGE(IDC_Tx5, &CLINProjectDlg::OnEnChangeTx)
 	ON_EN_CHANGE(IDC_Tx6, &CLINProjectDlg::OnEnChangeTx)
 	ON_EN_CHANGE(IDC_Tx7, &CLINProjectDlg::OnEnChangeTx)
+	ON_BN_CLICKED(IDC_LogSave, &CLINProjectDlg::OnBnClickedLogsave)
 END_MESSAGE_MAP()
 
 
@@ -1248,16 +1249,6 @@ void CLINProjectDlg::OnBnClickedStart()
 		MessageBox(_T("Select Schedule!"));
 	}
 	else if (!m_bThreadRunning) {
-		if (mLogSave.GetCheck() && logFileName == "") {
-			time_t now = std::time(nullptr);
-			tm tm1;
-
-			localtime_s(&tm1, &now);
-
-			logFileName = "log" + to_string(tm1.tm_year + 1900) + "_" + to_string(tm1.tm_mon + 1) + "_"
-				+ to_string(tm1.tm_mday) + "_" + to_string(tm1.tm_hour) + "_" + to_string(tm1.tm_min) + "_"
-				+ to_string(tm1.tm_sec) + ".linlog";
-		}
 		wLIN_start();
 	}
 }
@@ -1747,5 +1738,21 @@ void CLINProjectDlg::w_CSV_parse(string filePath) {
 	ifstream file(filePath);
 	if (!file.is_open()) {
 		return;
+	}
+}
+void CLINProjectDlg::OnBnClickedLogsave()
+{
+	if (mLogSave.GetCheck()) {
+		logFileName = "";
+	}
+	else if (mLogSave.GetCheck() && logFileName == "") {
+		time_t now = std::time(nullptr);
+		tm tm1;
+
+		localtime_s(&tm1, &now);
+
+		logFileName = "log" + to_string(tm1.tm_year + 1900) + "_" + to_string(tm1.tm_mon + 1) + "_"
+			+ to_string(tm1.tm_mday) + "_" + to_string(tm1.tm_hour) + "_" + to_string(tm1.tm_min) + "_"
+			+ to_string(tm1.tm_sec) + ".linlog";
 	}
 }
