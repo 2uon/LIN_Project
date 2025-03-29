@@ -78,7 +78,11 @@ public:
 	// 파일
 	string openFileName;
 	string openFileExt;
+
+	// 로그 파일
+	string logFileName;
 	ofstream log_file;
+	
 
 	// 스레드
 	CWinThread* m_pThread1, *m_pThread2;
@@ -320,5 +324,4 @@ public:
 	afx_msg void OnEnChangeTx();
 	ULONG64 sData = 0;
 	CButton mLogSave;
-	afx_msg void OnBnClickedLogsave();
 };

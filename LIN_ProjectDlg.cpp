@@ -129,7 +129,6 @@ BEGIN_MESSAGE_MAP(CLINProjectDlg, CDialogEx)
 	ON_EN_CHANGE(IDC_Tx5, &CLINProjectDlg::OnEnChangeTx)
 	ON_EN_CHANGE(IDC_Tx6, &CLINProjectDlg::OnEnChangeTx)
 	ON_EN_CHANGE(IDC_Tx7, &CLINProjectDlg::OnEnChangeTx)
-	ON_BN_CLICKED(IDC_LogSave, &CLINProjectDlg::OnBnClickedLogsave)
 END_MESSAGE_MAP()
 
 
@@ -1210,39 +1209,6 @@ void CLINProjectDlg::wReadData() {
 	}
 	return;
 }
-// 신호 파싱
-/*
-double value;
-int Data = 0;
-int d8 = 1;
-for (int j = rcvMsg.Length - 1; j >= 0; j--) {
-	Data += rcvMsg.Data[j] * d8;
-	d8 *= 8;
-}
-
-//data = 0000 0000 0001 "0000" 1000 0000 0000 0000
-//start = 12, end = 16
-//데이터를 (전체 데이터 길이 - end) 만큼 right shift 해야함.
-//data1 = 0000 0000 0001 "0000"
-//
-//앞 부분을 지우기 위해 먼저 앞부분만 남김.
-//데이터를 (전체 데이터 길이 - start) 만큼 right shift 해야함.
-//data2 = 0000 0000 0001
-//
-//빈 데이터를 구해야 하는 데이터 위치에 넣음.
-//데이터를 데이터 길이 = (end - start) 만큼 left shift 해야함.
-//data2 = 0000 0000 0001 0000
-//
-//data1 - data2 를 하면 앞부분을 날릴 수 있음.
-//=> 완료
-
-
-int Data1 = Data >> ((rcvMsg.Length * 8) - sig.end);
-int Data2 = Data >> ((rcvMsg.Length * 8) - sig.start);
-Data2 <<= (sig.end - sig.start);
-
-value = Data1 - Data2;
-*/
 
 void CLINProjectDlg::wGraphDraw(ULONG64 logData, double logTime, int index) {
 	graphSetting g = gSettings[index];
@@ -1275,17 +1241,29 @@ void CLINProjectDlg::OnBnClickedStart()
 		MessageBox(_T("Select Schedule!"));
 	}
 	else if (!m_bThreadRunning) {
+		if (mLogSave.GetCheck() && logFileName == "") {
+			time_t now = std::time(nullptr);
+			tm tm1;
+
+			localtime_s(&tm1, &now);
+
+			logFileName = "log" + to_string(tm1.tm_year + 1900) + "_" + to_string(tm1.tm_mon + 1) + "_"
+				+ to_string(tm1.tm_mday) + "_" + to_string(tm1.tm_hour) + "_" + to_string(tm1.tm_min) + "_"
+				+ to_string(tm1.tm_sec) + ".linlog";
+		}
 		wLIN_start();
 	}
 }
 
 void CLINProjectDlg::OnBnClickedPause()
 {
+	logFileName = "";
 	wLIN_pause();
 }
 
 void CLINProjectDlg::OnBnClickedStop()
 {
+	logFileName = "";
 	wLIN_clear();
 }
 
@@ -1755,16 +1733,5 @@ void CLINProjectDlg::OnBnClickedApply()
 				sendData[4], sendData[5], sendData[6], sendData[7]);
 			MessageBox(temp);*/
 		}
-	}
-}
-void CLINProjectDlg::OnBnClickedLogsave()
-{
-	if (mLogSave.GetCheck()) {
-		// 로그 저장 시작
-
-	}
-	else {
-		// 로그 저장 끝
-
 	}
 }
