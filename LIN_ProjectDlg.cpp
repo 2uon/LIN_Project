@@ -116,7 +116,6 @@ BEGIN_MESSAGE_MAP(CLINProjectDlg, CDialogEx)
 	ON_NOTIFY(LVN_ITEMCHANGED, IDC_SignalList, &CLINProjectDlg::OnLvnItemchangedSignallist)
 	ON_BN_CLICKED(IDC_Connect, &CLINProjectDlg::OnBnClickedConnect)
 	ON_BN_CLICKED(IDC_Disconnect, &CLINProjectDlg::OnBnClickedDisconnect)
-	ON_BN_CLICKED(IDC_Save, &CLINProjectDlg::OnBnClickedSave)
 	ON_WM_CLOSE()
 	ON_CBN_SELCHANGE(IDC_FrameName, &CLINProjectDlg::OnCbnSelchangeFramename)
 	ON_BN_CLICKED(IDC_Hex, &CLINProjectDlg::OnBnClickedHex)
@@ -130,6 +129,7 @@ BEGIN_MESSAGE_MAP(CLINProjectDlg, CDialogEx)
 	ON_EN_CHANGE(IDC_Tx5, &CLINProjectDlg::OnEnChangeTx)
 	ON_EN_CHANGE(IDC_Tx6, &CLINProjectDlg::OnEnChangeTx)
 	ON_EN_CHANGE(IDC_Tx7, &CLINProjectDlg::OnEnChangeTx)
+	ON_BN_CLICKED(IDC_LogSave, &CLINProjectDlg::OnBnClickedLogsave)
 END_MESSAGE_MAP()
 
 
@@ -1755,5 +1755,16 @@ void CLINProjectDlg::OnBnClickedApply()
 				sendData[4], sendData[5], sendData[6], sendData[7]);
 			MessageBox(temp);*/
 		}
+	}
+}
+void CLINProjectDlg::OnBnClickedLogsave()
+{
+	if (mLogSave.GetCheck()) {
+		// 로그 저장 시작
+
+	}
+	else {
+		// 로그 저장 끝
+
 	}
 }

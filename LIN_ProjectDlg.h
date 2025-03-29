@@ -320,4 +320,5 @@ public:
 	afx_msg void OnEnChangeTx();
 	ULONG64 sData = 0;
 	CButton mLogSave;
+	afx_msg void OnBnClickedLogsave();
 };

@@ -35,7 +35,6 @@
 #define IDC_LogFile                     1021
 #define IDC_OpenLog                     1022
 #define IDC_Signal                      1023
-#define IDC_LogFile2                    1023
 #define IDC_Schedule                    1024
 #define IDC_TraceList                   1032
 #define IDC_SignalList                  1033
@@ -44,6 +43,7 @@
 #define IDC_Hex                         1036
 #define IDC_CHECK2                      1037
 #define IDC_CHECK3                      1038
+#define IDC_LogSave                     1038
 #define IDC_LIST2                       1039
 #define IDC_Graphs                      1039
 #define IDC_SignalDataList              1039
