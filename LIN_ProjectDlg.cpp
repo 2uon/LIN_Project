@@ -98,6 +98,7 @@ void CLINProjectDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_SignalDataList, mSignalDataList);
 	DDX_Control(pDX, IDC_Hex, mHex);
 	DDX_Control(pDX, IDC_EDIT_MOD, mMod);
+	DDX_Control(pDX, IDC_LogSave, mLogSave);
 }
 
 BEGIN_MESSAGE_MAP(CLINProjectDlg, CDialogEx)

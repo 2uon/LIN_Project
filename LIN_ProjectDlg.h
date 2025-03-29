@@ -319,4 +319,5 @@ public:
 	afx_msg void OnLvnItemchangedSignaldatalist(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnEnChangeTx();
 	ULONG64 sData = 0;
+	CButton mLogSave;
 };
