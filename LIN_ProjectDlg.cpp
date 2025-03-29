@@ -1295,7 +1295,7 @@ void CLINProjectDlg::OnBnClickedOpenlog()
 			w_LDF_parse(temp); // LIN 설정 파일 파싱
 		}
 		else if (extend == _T("csv")) {
-			//w_LINLOG_parse(temp); // 저장한 로그 파일 파싱
+			w_CSV_parse(temp); // 저장한 로그 파일 파싱
 		}
 	}
 }
@@ -1740,5 +1740,12 @@ void CLINProjectDlg::OnBnClickedApply()
 				sendData[4], sendData[5], sendData[6], sendData[7]);
 			MessageBox(temp);*/
 		}
+	}
+}
+
+void CLINProjectDlg::w_CSV_parse(string filePath) {
+	ifstream file(filePath);
+	if (!file.is_open()) {
+		return;
 	}
 }
