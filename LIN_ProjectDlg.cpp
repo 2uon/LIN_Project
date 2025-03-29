@@ -1204,6 +1204,13 @@ void CLINProjectDlg::wReadData() {
 						wGraphDraw(Data, sigTime, m);
 					}
 				}
+
+				// 로그 저장
+				if (mLogSave.GetCheck() && logFileName != "") {
+					log_file.open(logFileName);
+					log_file << sigTime << "," << (rcvMsg.FrameId & 0x3F) << "," << Data << endl;
+					log_file.close();
+				}
 			}
 		}
 	}
@@ -1287,8 +1294,8 @@ void CLINProjectDlg::OnBnClickedOpenlog()
 		if (extend == _T("ldf")) {
 			w_LDF_parse(temp); // LIN 설정 파일 파싱
 		}
-		else if (extend == _T("linlog")) {
-			w_LINLOG_parse(temp); // 저장한 로그 파일 파싱
+		else if (extend == _T("csv")) {
+			//w_LINLOG_parse(temp); // 저장한 로그 파일 파싱
 		}
 	}
 }
