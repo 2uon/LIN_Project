@@ -35,7 +35,6 @@ public:
 
 	// 파싱 함수
 	int w_LDF_parse(string filePath);
-	int w_LINLOG_parse(string filePath);
 
 	void w_Parser_Config(string& line);
 	void w_Parser_Nodes(string& line);
@@ -74,7 +73,6 @@ public:
 	virtual BOOL PreTranslateMessage(MSG* pMsg);
 	afx_msg void OnBnClickedConnect();
 	afx_msg void OnBnClickedDisconnect();
-	afx_msg void OnBnClickedSave();
 	afx_msg void OnClose();
 
 	// 파일
