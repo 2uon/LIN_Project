@@ -322,4 +322,5 @@ public:
 	CButton mLogSave;
 	afx_msg void OnBnClickedLogsave();
 	CButton mLogViewer;
+	afx_msg void OnBnClickedLogviewer();
 };
