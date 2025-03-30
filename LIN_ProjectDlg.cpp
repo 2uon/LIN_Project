@@ -262,7 +262,6 @@ void CLINProjectDlg::initPharam() {
 	schedule_position = 0;
 	graphSig.clear();
 	signalEncodings.clear();
-	logDatas.clear();
 
 	// 위젯 초기화
 	mSchedule.ResetContent();
@@ -559,7 +558,6 @@ void CLINProjectDlg::wReadData() {
 					Data <<= 8;
 					Data += rcvMsg.Data[j];
 				}
-				logDatas[(rcvMsg.FrameId & 0x3F)].push_back(logData{ Data, sigTime});
 
 				for (int m = 0; m < gSettings.size(); m++) {
 					if (gSettings[m].id == (rcvMsg.FrameId & 0x3F)) {
@@ -835,26 +833,6 @@ void CLINProjectDlg::OnLvnItemchangedSignallist(NMHDR* pNMHDR, LRESULT* pResult)
 				CString signal(mSignalList.GetItemText(graphSig[j], 0));
 				mSig[j].SetWindowTextW(signal);
 			}
-
-			for (int j = m; j < graphSig.size(); j++) {
-				graphSetting g = gSettings[j];
-				for (int pos = 0; pos < logDatas[g.id].size(); pos++) {
-					int length = g.end - g.start;
-					double value;
-					ULONG64 mask = (1ULL << length) - 1;
-
-					if (g.id % 2 == 0) {
-						mask <<= 63 - g.end - 8 + 1;
-						value = (logDatas[g.id][pos].data & mask) >> (63 - g.end - 8 + 1);
-					}
-					else {
-						mask <<= 63 - g.end + 1;
-						value = (logDatas[g.id][pos].data & mask) >> (63 - g.end + 1);
-					}
-					pSeries[j]->AddPoint(logDatas[g.id][pos].time, value);
-				}
-			}
-
 		}
 		else if (mSignalList.GetCheck(index)&& graphSig.size() < 9) {
 			graphSig.push_back(index);
@@ -873,13 +851,6 @@ void CLINProjectDlg::OnLvnItemchangedSignallist(NMHDR* pNMHDR, LRESULT* pResult)
 			for (int id : FrameIDs) {
 				for (signalStartEnd sss : signalEncodings[id]) {
 					if (a.name != sss.name) continue;
-					else if (logDatas.empty()) {
-						g.id = id;
-						g.start = sss.start;
-						g.end = sss.end;
-
-						continue;
-					}
 					else {
 						g.id = id;
 						g.start = sss.start;
@@ -889,22 +860,6 @@ void CLINProjectDlg::OnLvnItemchangedSignallist(NMHDR* pNMHDR, LRESULT* pResult)
 			}
 			gSettings.push_back(g);
 			graphDatas.push_back(a);
-
-			for (int pos = 0; pos < logDatas[g.id].size(); pos++) {
-				int length = g.end - g.start;
-				double value;
-				ULONG64 mask = (1ULL << length) - 1;
-
-				if (g.id % 2 == 0) {
-					mask <<= 63 - g.end - 6 + 1;
-					value = (logDatas[g.id][pos].data & mask) >> (63 - g.end - 6 + 1);
-				}
-				else {
-					mask <<= 63 - g.end + 1;
-					value = (logDatas[g.id][pos].data & mask) >> (63 - g.end + 1);
-				}
-				pSeries[m]->AddPoint(logDatas[g.id][pos].time,value);
-			}
 		}
 	}
 	*pResult = 0;

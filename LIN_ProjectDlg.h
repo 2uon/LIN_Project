@@ -286,11 +286,11 @@ public:
 	};
 	map<int, vector<signalStartEnd>> signalEncodings; // Frame ID, 신호 구조
 
-	struct logData {
-		ULONG64 data;
-		double time;
-	};
-	map<int, vector<logData>> logDatas; // 데이터(8byte->int)
+	//struct logData {
+	//	ULONG64 data;
+	//	double time;
+	//};
+	//map<int, vector<logData>> logDatas; // 데이터(8byte->int)
 
 	double time = 0;
 
