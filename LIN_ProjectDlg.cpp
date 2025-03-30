@@ -447,9 +447,9 @@ void CLINProjectDlg::wReadData() {
 
 				// 로그 저장
 				if (mLogSave.GetCheck() && logFileName != "") {
-					log_file.open(logFileName);
-					log_file << sigTime << "," << (rcvMsg.FrameId & 0x3F) << "," << Data << endl;
-					log_file.close();
+					log_file_w.open(logFileName);
+					log_file_w << sigTime << "," << (rcvMsg.FrameId & 0x3F) << "," << Data << endl;
+					log_file_w.close();
 				}
 			}
 		}
@@ -524,9 +524,6 @@ void CLINProjectDlg::OnBnClickedOpenlog()
 		if (extend == _T("ldf")) {
 			w_LDF_parse(temp); // LIN 설정 파일 파싱
 		}
-		else if (extend == _T("csv")) {
-			w_CSV_parse(temp); // 저장한 로그 파일 파싱
-		}
 	}
 }
 
@@ -542,12 +539,16 @@ void CLINProjectDlg::OnBnClickedLogviewer()
 		CString extend = dlg.GetFileExt();
 
 		string temp = string(CT2CA(path));
-		//openFileName = string(CT2CA(fileName));
-		//openFileExt = string(CT2CA(extend));
 
 		if (extend == _T("csv")) {
-			w_CSV_parse(temp); // 저장한 로그 파일 파싱
-			MessageBox(fileName);
+			log_file_r.open(temp);// 저장한 로그 파일 열기
+			if (!log_file_r.is_open()) {
+				MessageBox(L"로그 파일 불러오기 실패");
+				return;
+			}
+			else {
+				MessageBox(fileName);
+			}
 		}
 	}
 }
@@ -950,12 +951,6 @@ void CLINProjectDlg::OnBnClickedApply()
 	}
 }
 
-void CLINProjectDlg::w_CSV_parse(string filePath) {
-	ifstream file(filePath);
-	if (!file.is_open()) {
-		return;
-	}
-}
 void CLINProjectDlg::OnBnClickedLogsave()
 {
 	if (mLogSave.GetCheck()) {

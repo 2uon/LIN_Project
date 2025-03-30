@@ -35,7 +35,6 @@ public:
 
 	// 파싱 함수
 	int w_LDF_parse(string filePath);
-	void w_CSV_parse(string filePath);
 
 	void w_Parser_Config(string& line);
 	void w_Parser_Nodes(string& line);
@@ -82,7 +81,8 @@ public:
 
 	// 로그 파일
 	string logFileName;
-	ofstream log_file;
+	ifstream log_file_r; 
+	ofstream log_file_w;
 	
 
 	// 스레드
