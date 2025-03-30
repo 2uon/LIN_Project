@@ -238,12 +238,7 @@ public:
 	BOOL onClear = false;
 
 	// UI 접근
-	CString progress;
-	CString errCode;
 	CString tx;
-
-	CStatic mProgress;
-	CStatic mErrCode;
 	CStatic mRx;
 
 	CEdit mTx0;

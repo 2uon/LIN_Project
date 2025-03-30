@@ -60,8 +60,6 @@ CLINProjectDlg::CLINProjectDlg(CWnd* pParent /*=nullptr*/)
 void CLINProjectDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
-	DDX_Control(pDX, IDC_Progress, mProgress);
-	DDX_Control(pDX, IDC_ErrCode, mErrCode);
 	DDX_Control(pDX, IDC_Tx0, mTx0);
 	DDX_Control(pDX, IDC_Tx1, mTx1);
 	DDX_Control(pDX, IDC_Tx2, mTx2);
@@ -415,18 +413,10 @@ int CLINProjectDlg::wLIN_start() {
 	// 정지 상태일 때 (재시작)
 	if (onPause) {
 		result = LIN_ResumeSchedule(hClient, hHw);
-
-		mProgress.SetWindowTextW(_T("스케줄 재시작"));
-		errCode.Format(_T("%d"), result);
-		mErrCode.SetWindowTextW(errCode);
 	}
 	// 정지 상태가 아닐 때 (시작)
 	else {
 		result = LIN_StartSchedule(hClient, hHw, mSchedule.GetCurSel());
-
-		mProgress.SetWindowTextW(_T("스케줄 시작"));
-		errCode.Format(_T("%d"), result);
-		mErrCode.SetWindowTextW(errCode);
 	}
 	
 	// 시작/재시작 성공 시 읽기 시작
@@ -444,9 +434,6 @@ int CLINProjectDlg::wLIN_pause() {
 	m_bThreadRunning = false;
 	// 스케줄 정지
 	result = LIN_SuspendSchedule(hClient, hHw);
-	mProgress.SetWindowTextW(_T("스케줄 정지"));
-	errCode.Format(_T("%d"), result);
-	mErrCode.SetWindowTextW(errCode);
 
 	onPause = true;
 	return 0;
@@ -457,11 +444,6 @@ int CLINProjectDlg::wLIN_connect() {
 	// 클라이언트 생성
 	result = LIN_RegisterClient(const_cast<char*>(w_Client_name.c_str()), 0, &hClient);
 
-	mProgress.SetWindowTextW(_T("클라이언트 생성"));
-	errCode.Format(_T("%d"), result);
-	mErrCode.SetWindowTextW(errCode);
-
-
 	// 하드웨어 등록
 	for (HLINHW hw : HW_TYPES) {
 		hHw = hw;
@@ -470,9 +452,6 @@ int CLINProjectDlg::wLIN_connect() {
 			break;
 		}
 	}
-	mProgress.SetWindowTextW(_T("하드웨어 등록"));
-	errCode.Format(_T("%d"), result);
-	mErrCode.SetWindowTextW(errCode);
 
 	if (result != errOK) {
 		hHw = 0;
@@ -480,11 +459,6 @@ int CLINProjectDlg::wLIN_connect() {
 
 	// 하드웨어 초기화 (마스터 모드, 19200 bit rate)
 	result = LIN_InitializeHardware(hClient, hHw, modMaster, w_LIN_speed * 1000);
-
-	mProgress.SetWindowTextW(_T("하드웨어 초기화"));
-	errCode.Format(_T("%d"), result);
-	mErrCode.SetWindowTextW(errCode);
-
 
 	if (result != errOK) {
 		LIN_DisconnectClient(hClient, hHw);
@@ -503,10 +477,6 @@ int CLINProjectDlg::wLIN_connect() {
 	// 스케줄
 	for (w_Schedules s : Schdules) {
 		result = LIN_SetSchedule(hClient, hHw, schedulesSize, s.Schedule, s.size);
-
-		mProgress.SetWindowTextW(_T("스케줄 설정"));
-		errCode.Format(_T("%d"), result);
-		mErrCode.SetWindowTextW(errCode);
 	}
 	return 0;
 }
@@ -517,11 +487,6 @@ int CLINProjectDlg::wLIN_clear() {
 	// 스케줄 삭제, 하드웨어 연결 해제
 	result = LIN_DeleteSchedule(hClient, hHw, schedule_position);
 	result = LIN_DisconnectClient(hClient, hHw);
-
-	mProgress.SetWindowTextW(_T("연결 해제"));
-	errCode.Format(_T("%d"), result);
-	mErrCode.SetWindowTextW(errCode);
-
 	
 	onPause = true;
 	onClear = true;
@@ -569,17 +534,7 @@ void CLINProjectDlg::wReadData() {
 
 			// 데이터 읽기
 			result = LIN_Read(hClient, &rcvMsg);
-			if (result != errOK) {
-				mProgress.SetWindowTextW(_T("데이터 읽기"));
-				errCode.Format(_T("%d"), result);
-				mErrCode.SetWindowTextW(errCode);
-
-			}
-			else {
-				mProgress.SetWindowTextW(_T("데이터 읽기"));
-				errCode.Format(_T("%d"), result);
-				mErrCode.SetWindowTextW(errCode);
-
+			if (result == errOK) {
 				double sigTime = time;
 				// Trace 값
 				int nItemNum = find(FrameIDs.begin(), FrameIDs.end(), (rcvMsg.FrameId & 0x3F)) - FrameIDs.begin();
@@ -1614,10 +1569,6 @@ int CLINProjectDlg::w_LDF_parse(string filePath) {
 	// 클라이언트 생성
 	result = LIN_RegisterClient(const_cast<char*>(w_Client_name.c_str()), 0, &hClient);
 
-	mProgress.SetWindowTextW(_T("클라이언트 생성"));
-	errCode.Format(_T("%d"), result);
-	mErrCode.SetWindowTextW(errCode);
-
 
 	// 하드웨어 등록
 	for (HLINHW hw : HW_TYPES) {
@@ -1627,9 +1578,6 @@ int CLINProjectDlg::w_LDF_parse(string filePath) {
 			break;
 		}
 	}
-	mProgress.SetWindowTextW(_T("하드웨어 등록"));
-	errCode.Format(_T("%d"), result);
-	mErrCode.SetWindowTextW(errCode);
 
 	if (result != errOK) {
 		hHw = 0;
@@ -1637,10 +1585,6 @@ int CLINProjectDlg::w_LDF_parse(string filePath) {
 
 	// 하드웨어 초기화 (마스터 모드, 19200 bit rate)
 	result = LIN_InitializeHardware(hClient, hHw, modMaster, w_LIN_speed * 1000);
-
-	mProgress.SetWindowTextW(_T("하드웨어 초기화"));
-	errCode.Format(_T("%d"), result);
-	mErrCode.SetWindowTextW(errCode);
 
 
 	if (result != errOK) {
@@ -1698,10 +1642,6 @@ int CLINProjectDlg::w_LDF_parse(string filePath) {
 
 
 		result = LIN_SetSchedule(hClient, hHw, schedulesSize, s.Schedule, s.size);
-
-		mProgress.SetWindowTextW(_T("스케줄 설정"));
-		errCode.Format(_T("%d"), result);
-		mErrCode.SetWindowTextW(errCode);
 
 		Schdules[schedulesSize] = s;
 		schedulesSize++;
