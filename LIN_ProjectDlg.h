@@ -80,7 +80,8 @@ public:
 	string openFileExt;
 
 	// 로그 파일
-	string logFileName;
+	string logFileName_r;
+	string logFileName_w;
 	ifstream log_file_r; 
 	ofstream log_file_w;
 	
