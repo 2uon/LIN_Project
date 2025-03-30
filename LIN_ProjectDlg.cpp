@@ -164,7 +164,9 @@ BOOL CLINProjectDlg::OnInitDialog()
 	SetIcon(m_hIcon, TRUE);			// 큰 아이콘을 설정합니다.
 	SetIcon(m_hIcon, FALSE);		// 작은 아이콘을 설정합니다.
 
-	// TODO: 여기에 추가 초기화 작업을 추가합니다.
+	// 프로그램명 설정
+	SetWindowText(L"LIN Simulation - v."+version);
+
 	// List 초기화
 	CRect rtTrace;
 	mTraceList.GetWindowRect(&rtTrace);

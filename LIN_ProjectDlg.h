@@ -62,6 +62,8 @@ protected:
 	DECLARE_MESSAGE_MAP()
 
 public:
+	CString version = L"0.0.1";
+
 	afx_msg void OnBnClickedStop();
 	afx_msg void OnBnClickedPause();
 	afx_msg void OnBnClickedStart();
