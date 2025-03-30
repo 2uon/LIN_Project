@@ -238,12 +238,7 @@ public:
 	BOOL onClear = false;
 
 	// UI 접근
-	CString progress;
-	CString errCode;
 	CString tx;
-
-	CStatic mProgress;
-	CStatic mErrCode;
 	CStatic mRx;
 
 	CEdit mTx0;
@@ -326,4 +321,5 @@ public:
 	ULONG64 sData = 0;
 	CButton mLogSave;
 	afx_msg void OnBnClickedLogsave();
+	CButton mLogViewer;
 };
