@@ -129,6 +129,7 @@ BEGIN_MESSAGE_MAP(CLINProjectDlg, CDialogEx)
 	ON_EN_CHANGE(IDC_Tx6, &CLINProjectDlg::OnEnChangeTx)
 	ON_EN_CHANGE(IDC_Tx7, &CLINProjectDlg::OnEnChangeTx)
 	ON_BN_CLICKED(IDC_LogSave, &CLINProjectDlg::OnBnClickedLogsave)
+	ON_BN_CLICKED(IDC_LogViewer, &CLINProjectDlg::OnBnClickedLogviewer)
 END_MESSAGE_MAP()
 
 
@@ -1686,4 +1687,8 @@ int CLINProjectDlg::w_LDF_parse(string filePath) {
 	file.close();
 
 	return 0;
+}
+void CLINProjectDlg::OnBnClickedLogviewer()
+{
+	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
 }

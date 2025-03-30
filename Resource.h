@@ -68,7 +68,6 @@
 #define IDC_BUTTON1                     1078
 #define IDC_Apply                       1078
 #define IDC_EDIT_MOD                    1092
-#define IDC_BUTTON2                     1093
 #define IDC_LogViewer                   1093
 
 // Next default values for new objects
