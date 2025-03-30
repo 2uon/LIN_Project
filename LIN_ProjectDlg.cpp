@@ -285,126 +285,6 @@ void CLINProjectDlg::initPharam() {
 
 }
 
-void CLINProjectDlg::w_Parser_Config(string& line) {
-	string key, value;
-	size_t pos = line.find('=');
-	if (pos == string::npos) return; // '=' 없으면 무시
-
-	key = line.substr(0, pos);
-	value = line.substr(pos + 1);
-
-	// 공백 및 특수문자 제거
-	key.erase(remove(key.begin(), key.end(), ' '), key.end());
-	key.erase(remove(key.begin(), key.end(), '\"'), key.end());
-	value.erase(remove(value.begin(), value.end(), ' '), value.end());
-	value.erase(remove(value.begin(), value.end(), '\"'), value.end());
-	value.erase(remove(value.begin(), value.end(), ';'), value.end());
-
-	// 값 저장
-	if (key == "LIN_protocol_version") {
-		w_LIN_protocol_version = stof(value);
-
-		//CString test;
-		//test.Format(_T("%f"), w_LIN_protocol_version);
-		//MessageBox(test);
-	}
-	else if (key == "LIN_language_version") {
-		w_LIN_language_version = stof(value);
-	}
-	else if (key == "LIN_speed") {
-		size_t kbps_pos = value.find("kbps");
-		if (kbps_pos != string::npos) {
-			value = value.substr(0, kbps_pos); // "kbps" 제거
-		}
-		w_LIN_speed = stof(value);
-	}
-}
-void CLINProjectDlg::w_Parser_Nodes(string& line) {
-	line.erase(remove(line.begin(), line.end(), ';'), line.end());
-	stringstream ss(line);
-	string value;
-
-	getline(ss, value, ':');
-	value.erase(remove(value.begin(), value.end(), ' '), value.end());
-
-	if (value == "Master") {
-		getline(ss, value, ',');
-		value.erase(remove(value.begin(), value.end(), ' '), value.end());
-		
-		w_Client_name = value;
-
-		getline(ss, value, ',');
-		value.erase(remove(value.begin(), value.end(), ' '), value.end());
-		value.erase(remove(value.begin(), value.end(), 'ms'), value.end());
-		w_delay = stoi(value);
-		getline(ss, value, ',');
-		value.erase(remove(value.begin(), value.end(), ' '), value.end());
-		value.erase(remove(value.begin(), value.end(), 'ms'), value.end());
-		w_IFS = stoi(value);
-	}
-	else if (value == "Slaves:") {
-		while (getline(ss, value, ',')) {
-			value.erase(remove(value.begin(), value.end(), ' '), value.end());
-			w_Slave_names[slave_cnt++] = value;
-		}
-	}
-
-}
-
-void CLINProjectDlg::w_Parser_Signals(string& line) {
-	stringstream ss(line);
-	w_Signal sig;
-
-	// 데이터 추출
-	string data;
-	getline(ss, data, ':');  // 신호 이름 추출
-	data.erase(remove(data.begin(), data.end(), ' '), data.end());
-	sig.name = data;
-	getline(ss, data, ';');
-	stringstream dataStream(data);
-	string value;
-
-
-	getline(dataStream, value, ',');
-	sig.dataLength = stoi(value);
-	getline(dataStream, value, ',');
-	sig.defaultValue = stoi(value);
-	getline(dataStream, value, ',');
-	sig.txNode = value;
-	if (getline(dataStream, value, ',')) {
-		sig.rxNode = value; 
-	}
-	else {
-		sig.rxNode = ""; // 값이 없을 경우 기본값 설정
-	}
-
-	w_Signals.push_back(sig);
-
-	// 테스트
-	//CString test(sig.txNode.c_str());
-	//MessageBox(_T("tx") + test);
-	//CString test2(sig.rxNode.c_str());
-	//MessageBox(_T("rx") + test2);
-}
-void CLINProjectDlg::w_Parser_DiagnosticSignals(string& line) {
-	stringstream ss(line);
-	w_DiagnosticSignal sig;
-	getline(ss, sig.name, ':');
-
-	// 데이터 추출
-	string data;
-	getline(ss, data, ';');
-	stringstream dataStream(data);
-	string value;
-
-	getline(dataStream, value, ',');
-	sig.size = stoi(value);
-	getline(dataStream, value, ',');
-	sig.value = stoi(value);
-
-	w_DiagnosticSignals.push_back(sig);
-}
-
 // LIN 스케줄 시작
 int CLINProjectDlg::wLIN_start() {
 	// 버스 깨우기
@@ -567,9 +447,9 @@ void CLINProjectDlg::wReadData() {
 
 				// 로그 저장
 				if (mLogSave.GetCheck() && logFileName != "") {
-					log_file.open(logFileName);
-					log_file << sigTime << "," << (rcvMsg.FrameId & 0x3F) << "," << Data << endl;
-					log_file.close();
+					log_file_w.open(logFileName);
+					log_file_w << sigTime << "," << (rcvMsg.FrameId & 0x3F) << "," << Data << endl;
+					log_file_w.close();
 				}
 			}
 		}
@@ -644,9 +524,6 @@ void CLINProjectDlg::OnBnClickedOpenlog()
 		if (extend == _T("ldf")) {
 			w_LDF_parse(temp); // LIN 설정 파일 파싱
 		}
-		else if (extend == _T("csv")) {
-			w_CSV_parse(temp); // 저장한 로그 파일 파싱
-		}
 	}
 }
 
@@ -662,12 +539,34 @@ void CLINProjectDlg::OnBnClickedLogviewer()
 		CString extend = dlg.GetFileExt();
 
 		string temp = string(CT2CA(path));
-		//openFileName = string(CT2CA(fileName));
-		//openFileExt = string(CT2CA(extend));
 
 		if (extend == _T("csv")) {
-			w_CSV_parse(temp); // 저장한 로그 파일 파싱
-			MessageBox(fileName);
+			log_file_r.open(temp);// 저장한 로그 파일 열기
+			if (!log_file_r.is_open()) {
+				MessageBox(L"로그 파일 불러오기 실패");
+				return;
+			}
+			else {
+				string line, log;
+				
+				double log_time;
+				BYTE log_id;
+				ULONG64 log_data;
+
+				while (getline(log_file_r, line)) {
+					stringstream ss(line);
+					getline(ss, log, ',');
+					log_time = stod(log);
+					getline(ss, log, ',');
+					log_id = stoi(log);
+					getline(ss, log, ',');
+					log_data = stoull(log);
+
+					logDatas[log_id].push_back(logData{ log_time, log_data });
+				}
+				MessageBox(fileName);
+			}
+			log_file_r.close();
 		}
 	}
 }
@@ -1070,12 +969,6 @@ void CLINProjectDlg::OnBnClickedApply()
 	}
 }
 
-void CLINProjectDlg::w_CSV_parse(string filePath) {
-	ifstream file(filePath);
-	if (!file.is_open()) {
-		return;
-	}
-}
 void CLINProjectDlg::OnBnClickedLogsave()
 {
 	if (mLogSave.GetCheck()) {
@@ -1665,4 +1558,125 @@ int CLINProjectDlg::w_LDF_parse(string filePath) {
 	file.close();
 
 	return 0;
+}
+
+
+void CLINProjectDlg::w_Parser_Config(string& line) {
+	string key, value;
+	size_t pos = line.find('=');
+	if (pos == string::npos) return; // '=' 없으면 무시
+
+	key = line.substr(0, pos);
+	value = line.substr(pos + 1);
+
+	// 공백 및 특수문자 제거
+	key.erase(remove(key.begin(), key.end(), ' '), key.end());
+	key.erase(remove(key.begin(), key.end(), '\"'), key.end());
+	value.erase(remove(value.begin(), value.end(), ' '), value.end());
+	value.erase(remove(value.begin(), value.end(), '\"'), value.end());
+	value.erase(remove(value.begin(), value.end(), ';'), value.end());
+
+	// 값 저장
+	if (key == "LIN_protocol_version") {
+		w_LIN_protocol_version = stof(value);
+
+		//CString test;
+		//test.Format(_T("%f"), w_LIN_protocol_version);
+		//MessageBox(test);
+	}
+	else if (key == "LIN_language_version") {
+		w_LIN_language_version = stof(value);
+	}
+	else if (key == "LIN_speed") {
+		size_t kbps_pos = value.find("kbps");
+		if (kbps_pos != string::npos) {
+			value = value.substr(0, kbps_pos); // "kbps" 제거
+		}
+		w_LIN_speed = stof(value);
+	}
+}
+void CLINProjectDlg::w_Parser_Nodes(string& line) {
+	line.erase(remove(line.begin(), line.end(), ';'), line.end());
+	stringstream ss(line);
+	string value;
+
+	getline(ss, value, ':');
+	value.erase(remove(value.begin(), value.end(), ' '), value.end());
+
+	if (value == "Master") {
+		getline(ss, value, ',');
+		value.erase(remove(value.begin(), value.end(), ' '), value.end());
+
+		w_Client_name = value;
+
+		getline(ss, value, ',');
+		value.erase(remove(value.begin(), value.end(), ' '), value.end());
+		value.erase(remove(value.begin(), value.end(), 'ms'), value.end());
+		w_delay = stoi(value);
+		getline(ss, value, ',');
+		value.erase(remove(value.begin(), value.end(), ' '), value.end());
+		value.erase(remove(value.begin(), value.end(), 'ms'), value.end());
+		w_IFS = stoi(value);
+	}
+	else if (value == "Slaves:") {
+		while (getline(ss, value, ',')) {
+			value.erase(remove(value.begin(), value.end(), ' '), value.end());
+			w_Slave_names[slave_cnt++] = value;
+		}
+	}
+
+}
+
+void CLINProjectDlg::w_Parser_Signals(string& line) {
+	stringstream ss(line);
+	w_Signal sig;
+
+	// 데이터 추출
+	string data;
+	getline(ss, data, ':');  // 신호 이름 추출
+	data.erase(remove(data.begin(), data.end(), ' '), data.end());
+	sig.name = data;
+	getline(ss, data, ';');
+	stringstream dataStream(data);
+	string value;
+
+
+	getline(dataStream, value, ',');
+	sig.dataLength = stoi(value);
+	getline(dataStream, value, ',');
+	sig.defaultValue = stoi(value);
+	getline(dataStream, value, ',');
+	sig.txNode = value;
+	if (getline(dataStream, value, ',')) {
+		sig.rxNode = value;
+	}
+	else {
+		sig.rxNode = ""; // 값이 없을 경우 기본값 설정
+	}
+
+	w_Signals.push_back(sig);
+
+	// 테스트
+	//CString test(sig.txNode.c_str());
+	//MessageBox(_T("tx") + test);
+	//CString test2(sig.rxNode.c_str());
+	//MessageBox(_T("rx") + test2);
+}
+void CLINProjectDlg::w_Parser_DiagnosticSignals(string& line) {
+	stringstream ss(line);
+	w_DiagnosticSignal sig;
+	getline(ss, sig.name, ':');
+
+	// 데이터 추출
+	string data;
+	getline(ss, data, ';');
+	stringstream dataStream(data);
+	string value;
+
+	getline(dataStream, value, ',');
+	sig.size = stoi(value);
+	getline(dataStream, value, ',');
+	sig.value = stoi(value);
+
+	w_DiagnosticSignals.push_back(sig);
 }
