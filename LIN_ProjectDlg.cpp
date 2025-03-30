@@ -547,6 +547,23 @@ void CLINProjectDlg::OnBnClickedLogviewer()
 				return;
 			}
 			else {
+				string line, log;
+				
+				double log_time;
+				BYTE log_id;
+				ULONG64 log_data;
+
+				while (getline(log_file_r, line)) {
+					stringstream ss(line);
+					getline(ss, log, ',');
+					log_time = stod(log);
+					getline(ss, log, ',');
+					log_id = stoi(log);
+					getline(ss, log, ',');
+					log_data = stoull(log);
+
+					logDatas[log_id].push_back(logData{ log_time, log_data });
+				}
 				MessageBox(fileName);
 			}
 		}
