@@ -566,6 +566,7 @@ void CLINProjectDlg::OnBnClickedLogviewer()
 				}
 				MessageBox(fileName);
 			}
+			log_file_r.close();
 		}
 	}
 }
