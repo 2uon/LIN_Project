@@ -729,6 +729,13 @@ void CLINProjectDlg::OnLvnItemchangedSignallist(NMHDR* pNMHDR, LRESULT* pResult)
 					continue;
 				}
 
+				if (j < graphSig.size()) {
+					int pointCnt = pSeries[j + 1]->GetPointsCount();
+					for (int k = 0; k < pointCnt; k++) {
+						pSeries[j]->AddPoint(pSeries[j + 1]->GetXPointValue(k), pSeries[j + 1]->GetYPointValue(k));
+					}
+				}
+
 				CString signal(mSignalList.GetItemText(graphSig[j], 0));
 				mSig[j].SetWindowTextW(signal);
 			}
