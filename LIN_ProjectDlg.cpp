@@ -630,7 +630,7 @@ void CLINProjectDlg::OnBnClickedOpenlog()
 {
 	initPharam();
 
-	static TCHAR BASED_CODE szFilter[] = _T("모든 파일 (*.ldf, *.linlog)|*.ldf;*.linlog|데이터베이스 파일 (*.ldf)|*.ldf; |로그 파일 (*.linlog) |*.linlog||");
+	static TCHAR BASED_CODE szFilter[] = _T("데이터베이스 파일 (*.ldf)|*.ldf; ||");
 	CFileDialog dlg(TRUE, _T("*.ldf"), _T(""), OFN_HIDEREADONLY, szFilter);
 
 	if (IDOK == dlg.DoModal()) {
@@ -651,6 +651,29 @@ void CLINProjectDlg::OnBnClickedOpenlog()
 		}
 	}
 }
+
+
+void CLINProjectDlg::OnBnClickedLogviewer()
+{
+	static TCHAR BASED_CODE szFilter[] = _T("로그 파일 (*.csv)|*.csv; ||");
+	CFileDialog dlg(TRUE, _T("*.csv"), _T(""), OFN_HIDEREADONLY, szFilter);
+
+	if (IDOK == dlg.DoModal()) {
+		CString path = dlg.GetPathName();
+		CString fileName = dlg.GetFileName();
+		CString extend = dlg.GetFileExt();
+
+		string temp = string(CT2CA(path));
+		//openFileName = string(CT2CA(fileName));
+		//openFileExt = string(CT2CA(extend));
+
+		if (extend == _T("csv")) {
+			w_CSV_parse(temp); // 저장한 로그 파일 파싱
+			MessageBox(fileName);
+		}
+	}
+}
+
 void CLINProjectDlg::OnCbnSelchangeSchedule()
 {
 	int selNum = mSchedule.GetCurSel();
@@ -1687,8 +1710,4 @@ int CLINProjectDlg::w_LDF_parse(string filePath) {
 	file.close();
 
 	return 0;
-}
-void CLINProjectDlg::OnBnClickedLogviewer()
-{
-	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
 }
