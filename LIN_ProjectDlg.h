@@ -321,4 +321,5 @@ public:
 	ULONG64 sData = 0;
 	CButton mLogSave;
 	afx_msg void OnBnClickedLogsave();
+	CButton mLogViewer;
 };
