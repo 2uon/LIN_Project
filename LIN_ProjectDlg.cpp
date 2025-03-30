@@ -447,7 +447,7 @@ void CLINProjectDlg::wReadData() {
 
 				// 로그 저장
 				if (mLogSave.GetCheck() && logFileName != "") {
-					log_file_w.open(logFileName);
+					log_file_w.open(logFileName,ios_base::out | ios_base::app);
 					log_file_w << sigTime << "," << (rcvMsg.FrameId & 0x3F) << "," << Data << endl;
 					log_file_w.close();
 				}
@@ -811,6 +811,10 @@ void CLINProjectDlg::OnClose()
 {
 	wLIN_clear();
 
+	if (log_file_w.is_open()) {
+		log_file_w.close();
+	}
+
 	CDialogEx::OnClose();
 }
 
@@ -971,8 +975,11 @@ void CLINProjectDlg::OnBnClickedApply()
 
 void CLINProjectDlg::OnBnClickedLogsave()
 {
-	if (mLogSave.GetCheck()) {
+	if (!mLogSave.GetCheck()) {
 		logFileName = "";
+		if (log_file_w.is_open()) {
+			log_file_w.close();
+		}
 	}
 	else if (mLogSave.GetCheck() && logFileName == "") {
 		time_t now = std::time(nullptr);
@@ -982,7 +989,9 @@ void CLINProjectDlg::OnBnClickedLogsave()
 
 		logFileName = "log" + to_string(tm1.tm_year + 1900) + "_" + to_string(tm1.tm_mon + 1) + "_"
 			+ to_string(tm1.tm_mday) + "_" + to_string(tm1.tm_hour) + "_" + to_string(tm1.tm_min) + "_"
-			+ to_string(tm1.tm_sec) + ".linlog";
+			+ to_string(tm1.tm_sec) + ".csv";
+
+		log_file_w.open(logFileName);
 	}
 }
 
