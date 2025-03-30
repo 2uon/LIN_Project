@@ -959,12 +959,12 @@ void CLINProjectDlg::OnBnClickedApply()
 			ULONG64 mask;
 
 			if (frameId_global % 2 == 0) {
-				mask = ~(((1ULL << length) - 1) << (sig.end + 5));
+				mask = (((1ULL << length) - 1) << (63 - sig.end - 1));
 				sData = (sData & mask);
 				sData += d << (63 - sig.end - 5); // 5 = 6 - 1
 			}
 			else {
-				mask = ~(((1ULL << length) - 1) << (sig.end + 1));
+				mask = ~(((1ULL << length) - 1) << (63 - sig.end + 1));
 				sData = (sData & mask);
 				sData += d << (63 - sig.end + 1);
 			}
@@ -983,10 +983,10 @@ void CLINProjectDlg::OnBnClickedApply()
 
 
 				if (mHex.GetCheck()) {
-					temp.Format(_T("%X"), a);
+					temp.Format(_T("%X"), (int)a);
 				}
 				else {
-					temp.Format(_T("%d"), a);
+					temp.Format(_T("%d"), (int)a);
 				}
 				mTx[j]->SetWindowTextW(temp);
 				sendData[j] = a;
