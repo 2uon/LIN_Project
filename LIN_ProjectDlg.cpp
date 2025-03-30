@@ -446,8 +446,8 @@ void CLINProjectDlg::wReadData() {
 				}
 
 				// 로그 저장
-				if (mLogSave.GetCheck() && logFileName != "") {
-					log_file_w.open(logFileName,ios_base::out | ios_base::app);
+				if (mLogSave.GetCheck() && logFileName_w != "") {
+					log_file_w.open(logFileName_w,ios_base::out | ios_base::app);
 					log_file_w << sigTime << "," << (rcvMsg.FrameId & 0x3F) << "," << Data << endl;
 					log_file_w.close();
 				}
@@ -494,13 +494,11 @@ void CLINProjectDlg::OnBnClickedStart()
 
 void CLINProjectDlg::OnBnClickedPause()
 {
-	logFileName = "";
 	wLIN_pause();
 }
 
 void CLINProjectDlg::OnBnClickedStop()
 {
-	logFileName = "";
 	wLIN_clear();
 }
 
@@ -547,6 +545,8 @@ void CLINProjectDlg::OnBnClickedLogviewer()
 				return;
 			}
 			else {
+				logFileName_r = temp;
+
 				string line, log;
 				
 				double log_time;
@@ -754,11 +754,31 @@ void CLINProjectDlg::OnLvnItemchangedSignallist(NMHDR* pNMHDR, LRESULT* pResult)
 						g.id = id;
 						g.start = sss.start;
 						g.end = sss.end;
+						break;
 					}
 				}
 			}
 			gSettings.push_back(g);
 			graphDatas.push_back(a);
+
+			if (logFileName_r != "") {
+				for (logData log : logDatas[g.id]) {
+					int length = g.end - g.start;
+					double value;
+					ULONG64 mask = (1ULL << length) - 1;
+
+					if (g.id % 2 == 0) {
+						mask <<= 63 - g.end - 6 + 1;
+						value = (log.data & mask) >> (63 - g.end - 6 + 1);
+					}
+					else {
+						mask <<= 63 - g.end + 1;
+						value = (log.data & mask) >> (63 - g.end + 1);
+					}
+
+					pSeries[m]->AddPoint(log.time, value);
+				}
+			}
 		}
 	}
 	*pResult = 0;
@@ -976,22 +996,22 @@ void CLINProjectDlg::OnBnClickedApply()
 void CLINProjectDlg::OnBnClickedLogsave()
 {
 	if (!mLogSave.GetCheck()) {
-		logFileName = "";
+		logFileName_w = "";
 		if (log_file_w.is_open()) {
 			log_file_w.close();
 		}
 	}
-	else if (mLogSave.GetCheck() && logFileName == "") {
+	else if (mLogSave.GetCheck()) {
 		time_t now = std::time(nullptr);
 		tm tm1;
 
 		localtime_s(&tm1, &now);
 
-		logFileName = "log" + to_string(tm1.tm_year + 1900) + "_" + to_string(tm1.tm_mon + 1) + "_"
+		logFileName_w = "log" + to_string(tm1.tm_year + 1900) + "_" + to_string(tm1.tm_mon + 1) + "_"
 			+ to_string(tm1.tm_mday) + "_" + to_string(tm1.tm_hour) + "_" + to_string(tm1.tm_min) + "_"
 			+ to_string(tm1.tm_sec) + ".csv";
 
-		log_file_w.open(logFileName);
+		log_file_w.open(logFileName_w);
 	}
 }
 
