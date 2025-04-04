@@ -167,7 +167,18 @@ BOOL CLINProjectDlg::OnInitDialog()
 	// 프로그램명 설정
 	SetWindowText(L"LIN Simulation - v."+version);
 
-	// List 초기화
+	/*
+	ListCtrl 초기화
+
+	mTraceList의 스타일 지정 (그리드 라인, 선택 시 행 모두 선택, 더블 버퍼 사용(계속 값이 변경되기 때문에))
+	각 행 별 값과 너비 지정 (Frame ID, Frame Name, Frame Data, Error Flags)
+
+	mSignalList의 스타일 지정 (체크 박스, 그리드 라인, 선택 시 행 모두 선택)
+	각 행 별 값과 너비 지정 (Signal Name, Frame ID)
+
+	mSignalDataList의 스타일 지정 (체크 박스, 그리드 라인, 더블 버퍼 사용(계속 값이 변경되기 때문에))
+	각 행 별 값과 너비 지정 (Signal Name, Frame ID)
+	*/
 	CRect rtTrace;
 	mTraceList.GetWindowRect(&rtTrace);
 	mTraceList.SetExtendedStyle(LVS_EX_GRIDLINES | LVS_EX_FULLROWSELECT | LVS_EX_DOUBLEBUFFER);
