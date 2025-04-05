@@ -295,6 +295,7 @@ public:
 	map<int, vector<logData>> logDatas; // 데이터(8byte->int)
 
 	double time = 0;
+	double t = 0;
 
 	// graphData로 이루어진 벡터(각 신호에 대한 데이터 저장)을 벡터로 모음.
 	struct graphData {
