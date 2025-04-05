@@ -62,7 +62,7 @@ protected:
 	DECLARE_MESSAGE_MAP()
 
 public:
-	CString version = L"0.0.1";
+	CString version = L"1.0.0";
 
 	afx_msg void OnBnClickedStop();
 	afx_msg void OnBnClickedPause();
@@ -238,7 +238,6 @@ public:
 
 	int schedule_position = 0;
 	BOOL onPause = false;
-	BOOL onClear = false;
 
 	// UI 접근
 	CString tx;
