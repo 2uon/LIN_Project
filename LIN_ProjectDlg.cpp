@@ -295,6 +295,7 @@ void CLINProjectDlg::initPharam() {
 	// 그래프 변수 초기화
 	signalEncodings = {};
 	time = 0;
+	t = 0;
 
 }
 
@@ -344,6 +345,7 @@ int CLINProjectDlg::wLIN_connect() {
 	// 그래프 변수 초기화
 	signalEncodings = {};
 	time = 0;
+	t = 0;
 
 	Frames.clear();
 	FrameNames.clear();
@@ -499,9 +501,21 @@ UINT CLINProjectDlg::wTimerThread(LPVOID pParam) {
 }
 
 void CLINProjectDlg::wTimer() {
+	int index;
+
 	while (m_bThreadRunning) {
 		time += 0.01;
 		Sleep(10);
+
+		if (t == time || t < time) {
+			for (index = 0; index < 9; index++) {
+				if (t < 20) 
+					mGraph[index].GetBottomAxis()->SetMinMax(0, 25);
+				else
+					mGraph[index].GetBottomAxis()->SetMinMax(t - 20, t + 5);
+			}
+			t += 0.1;
+		}
 	}
 }
 
@@ -585,12 +599,6 @@ void CLINProjectDlg::wGraphDraw(ULONG64 logData, double logTime, int index) {
 	}
 
 	pSeries[index]->AddPoint(logTime, value);
-	if (logTime < 20) {
-		mGraph[index].GetBottomAxis()->SetMinMax(0, 25);
-	}
-	else {
-		mGraph[index].GetBottomAxis()->SetMinMax(logTime - 20, logTime + 5);
-	}
 }
 
 
@@ -909,7 +917,8 @@ void CLINProjectDlg::initGraph(int index) {
 	CChartStandardAxis* pLeftAxis =
 		mGraph[index].CreateStandardAxis(CChartCtrl::LeftAxis);
 	pLeftAxis->SetAutomaticMode(CChartAxis::FullAutomatic);
-	pBottomAxis->SetAutomaticMode(CChartAxis::FullAutomatic);
+	pBottomAxis->SetAutomaticMode(CChartAxis::NotAutomatic);
+	pBottomAxis->SetMinMax(0, 25);
 
 	pBottomAxis->SetDiscrete(false);
 	//mGraph[index].ShowMouseCursor(true);
