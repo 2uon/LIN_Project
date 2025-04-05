@@ -238,7 +238,6 @@ public:
 
 	int schedule_position = 0;
 	BOOL onPause = false;
-	BOOL onClear = false;
 
 	// UI 접근
 	CString tx;
